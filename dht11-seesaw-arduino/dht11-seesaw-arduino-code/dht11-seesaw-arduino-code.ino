@@ -1,4 +1,5 @@
 #include "Adafruit_seesaw.h"
+#include "Adafruit_VEML7700.h"
 #include "DHT.h"
 
 uint8_t  const ANALOG_PIN_1          = A1;
@@ -12,11 +13,13 @@ uint8_t  const DIGITAL_PIN_7         = 7;
 uint8_t  const SEESAW_CAPACITIVE_PIN = 0;
 uint8_t  const SEESAW_I2C_ADDRESS    = 0x36;
 uint16_t const SERIAL_BAUD_RATE      = 9600;                                                                            // 9600 bps should be plenty for our purposes
+uint16_t const DELAY_RATE            = 1000;
 char     const DEGREE_SYMBOL         = 248;
 
-DHT             * humidityTemperatureSensor = new DHT(DIGITAL_PIN_7, DHT11);
-Adafruit_seesaw * seesawSensor              = new Adafruit_seesaw();
 
+DHT               * humidityTemperatureSensor = new DHT(DIGITAL_PIN_7, DHT11);
+Adafruit_seesaw   * seesawSensor              = new Adafruit_seesaw();
+Adafruit_VEML7700 * luxSensor                 = new Adafruit_VEML7700();
 
 struct DHT11Results 
 {
@@ -30,12 +33,19 @@ struct SeesawResults
 	uint16_t capacitance;
 };
 
+struct LuxResults
+{
+	float luminescense;
+	float white;
+	uint32_t ambientLight;
+};
+
 DHT11Results * readDHT11Sensor() 
 {
 	DHT11Results * const dht11Results = (DHT11Results *) malloc(sizeof(DHT11Results));                               // Allocate address for results struct
   
 	dht11Results->humidity    = humidityTemperatureSensor->readHumidity();
-	dht11Results->temperature = humidityTemperatureSensor->readTemperature();
+	dht11Results->temperature = humidityTemperatureSensor->readTemperature(true);
 	
 	return dht11Results;
 } 
@@ -50,9 +60,26 @@ SeesawResults * readSeesawSensor()
 	return seesawResults;
 }
 
-void setup()                                                                                                            // Runs once at beginning of code
+LuxResults * readLuxSensor() 
+{
+	LuxResults * const luxResults = (LuxResults *) malloc(sizeof(LuxResults));
+
+	luxResults->luminescense = luxSensor->readLux();
+	luxResults->white = luxSensor->readWhite();
+	luxResults->ambientLight = luxSensor->readALS();
+
+	return luxResults;
+}
+
+void setup()                                                                                                           // Runs once at beginning of code
 {
 	Serial.begin(SERIAL_BAUD_RATE);
+
+	while (!Serial);                                                                                               // Wait until the serial device responds
+
+	luxSensor->setGain(VEML7700_GAIN_1_8);
+	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
+	
 	if (!seesawSensor->begin(SEESAW_I2C_ADDRESS)) {
 		Serial.println("CANNOT START SEESAW");
 		for (;;) 
@@ -65,10 +92,11 @@ void loop()                                                                     
 {
 	DHT11Results  * const dht11Results  = readDHT11Sensor();
 	SeesawResults * const seesawResults = readSeesawSensor();
-
-	Serial.println("Temperature: " + String(dht11Results->temperature) + DEGREE_SYMBOL + "C");
+	LuxResults    * const luxResults    = readLuxSensor();
+	Serial.println("Temperature: " + String(dht11Results->temperature) + DEGREE_SYMBOL + "F");
 	Serial.println("Humidity: " + String(dht11Results->humidity) + "%");
-	Serial.println("Capacitance: " + String(seesawResults->capacitance) + "/1024\n");
-
-	delay(1000);                                                                                                   // Set loop interval in ms here
+	Serial.println("Capacitance: " + String(seesawResults->capacitance) + "/1024");
+	Serial.println("Luminescence: " + String(luxResults->luminescense) + " lux\n");
+	
+	delay(DELAY_RATE);                                                                                                   // Set loop interval in ms here
 }
