@@ -1,6 +1,7 @@
 #include "Adafruit_seesaw.h"
 #include "Adafruit_VEML7700.h"
 #include "DHT.h"
+#include "Wire.h"
 
 uint8_t  const ANALOG_PIN_1          = A1;
 uint8_t  const ANALOG_PIN_2          = A2;
@@ -12,7 +13,7 @@ uint8_t  const ANALOG_PIN_7          = A7;
 uint8_t  const DIGITAL_PIN_7         = 7;
 uint8_t  const SEESAW_CAPACITIVE_PIN = 0;
 uint8_t  const SEESAW_I2C_ADDRESS    = 0x36;
-uint16_t const SERIAL_BAUD_RATE      = 9600;                                                                            // 9600 bps should be plenty for our purposes
+uint16_t const SERIAL_BAUD_RATE      = 115200;                                                                            // 9600 bps should be plenty for our purposes
 uint16_t const DELAY_RATE            = 1000;
 char     const DEGREE_SYMBOL         = 248;
 
@@ -71,12 +72,31 @@ LuxResults * readLuxSensor()
 	return luxResults;
 }
 
+void findOpenI2CAddresses()
+{
+	uint8_t devices = 0;
+	uint8_t error;
+
+	Serial.println("Scanning I2C devices");
+
+	for (uint8_t address = 1; address < 127; ++address) {
+		Wire.beginTransmission(address);
+		error = Wire.endTransmission();
+		Serial.println("Address " + String(address) + ": " + String(error));
+	}
+
+	Serial.println("Done reading I2C devices");
+}
+
 void setup()                                                                                                           // Runs once at beginning of code
 {
+	Wire.begin();
 	Serial.begin(SERIAL_BAUD_RATE);
 
 	while (!Serial);                                                                                               // Wait until the serial device responds
+	Serial.println("Setting up sensors");
 
+	findOpenI2CAddresses();
 	luxSensor->setGain(VEML7700_GAIN_1_8);
 	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
 	
@@ -88,7 +108,7 @@ void setup()                                                                    
 	humidityTemperatureSensor->begin();
 }
 
-void loop()                                                                                                            // Runs continuously until device is manually stopped
+void loop()                                                                                                           // Runs continuously until device is manually stopped
 {
 	DHT11Results  * const dht11Results  = readDHT11Sensor();
 	SeesawResults * const seesawResults = readSeesawSensor();
