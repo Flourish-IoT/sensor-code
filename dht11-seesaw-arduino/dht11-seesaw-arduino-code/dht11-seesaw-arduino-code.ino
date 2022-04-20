@@ -13,6 +13,7 @@ uint8_t  const ANALOG_PIN_7          = A7;
 uint8_t  const DIGITAL_PIN_7         = 7;
 uint8_t  const SEESAW_CAPACITIVE_PIN = 0;
 uint8_t  const SEESAW_I2C_ADDRESS    = 0x36;
+uint8_t  const VEML7700_I2C_ADDRESS  = 0x10;
 uint16_t const SERIAL_BAUD_RATE      = 115200;                                                                            // 9600 bps should be plenty for our purposes
 uint16_t const DELAY_RATE            = 1000;
 char     const DEGREE_SYMBOL         = 248;
@@ -74,7 +75,6 @@ LuxResults * readLuxSensor()
 
 void findOpenI2CAddresses()
 {
-	uint8_t devices = 0;
 	uint8_t error;
 
 	Serial.println("Scanning I2C devices");
@@ -82,7 +82,8 @@ void findOpenI2CAddresses()
 	for (uint8_t address = 1; address < 127; ++address) {
 		Wire.beginTransmission(address);
 		error = Wire.endTransmission();
-		Serial.println("Address " + String(address) + ": " + String(error));
+		if (error == 0 || error == 4)
+			Serial.println("Address " + String(address) + ": " + String(error));
 	}
 
 	Serial.println("Done reading I2C devices");
@@ -97,14 +98,25 @@ void setup()                                                                    
 	Serial.println("Setting up sensors");
 
 	findOpenI2CAddresses();
-	luxSensor->setGain(VEML7700_GAIN_1_8);
-	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
 	
 	if (!seesawSensor->begin(SEESAW_I2C_ADDRESS)) {
 		Serial.println("CANNOT START SEESAW");
 		for (;;) 
 			delay(5000);
 	}
+	Serial.println("SEESAW STARTED");
+	
+	if (!luxSensor->begin()) {
+		Serial.println("CANNOT START VEML");
+	}
+	Serial.println("VEML STARTED");
+
+	Serial.println("Setting Lux Sensor Gain");
+	luxSensor->setGain(VEML7700_GAIN_1_8);
+	Serial.println("Setting Lux Sensor Integration Time");
+	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
+	
+	Serial.print("Beginning DHT11");
 	humidityTemperatureSensor->begin();
 }
 
