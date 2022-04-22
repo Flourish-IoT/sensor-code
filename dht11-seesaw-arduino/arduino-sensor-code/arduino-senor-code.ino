@@ -3,15 +3,10 @@
 #include "DHT.h"
 #include "Wire.h"
 
-uint8_t  const ANALOG_PIN_1          = A1;
-uint8_t  const ANALOG_PIN_2          = A2;
-uint8_t  const ANALOG_PIN_3          = A3;
-uint8_t  const ANALOG_PIN_4          = A4;
-uint8_t  const ANALOG_PIN_5          = A5;
-uint8_t  const ANALOG_PIN_6          = A6;
-uint8_t  const ANALOG_PIN_7          = A7;
+uint8_t  const RED_LED_PIN           = 2;
+uint8_t  const GREEN_LED_PIN         = 3;
+uint8_t  const BLUE_LED_PIN          = 4;
 uint8_t  const DIGITAL_PIN_7         = 7;
-uint8_t  const SEESAW_CAPACITIVE_PIN = 0;
 uint8_t  const SEESAW_I2C_ADDRESS    = 0x36;
 uint8_t  const VEML7700_I2C_ADDRESS  = 0x10;
 uint16_t const SERIAL_BAUD_RATE      = 115200;                                                                            // 9600 bps should be plenty for our purposes
