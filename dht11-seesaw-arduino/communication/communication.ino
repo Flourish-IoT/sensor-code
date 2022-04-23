@@ -24,8 +24,8 @@ char     * const CONFIGURATOR_UUID    = "dabd-4a32-8e63-7631272ab6e3";
 char     * const SCANNER_UUID         = "b50b-48b7-87e2-a6d52eb9cc9c";
 char     * const CONTENT_TYPE         = "application/json";
 char     * const SERVER_NAME          = "httpbin.org";
-char     * const WIFI_SSID            = "Fios-5cJfH";
-char     * const WIFI_PASSWORD        = "vane29waft98fan";
+char     * const WIFI_SSID            = "";
+char     * const WIFI_PASSWORD        = "";
 
 DHT               * humidityTemperatureSensor = new DHT(DIGITAL_PIN_7, DHT11);
 Adafruit_seesaw   * seesawSensor              = new Adafruit_seesaw();
