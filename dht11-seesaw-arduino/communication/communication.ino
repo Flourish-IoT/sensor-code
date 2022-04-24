@@ -26,8 +26,8 @@ char     * const HARDWARE_REVISION    = "0.1";
 char     * const FIRMWARE_REVISION    = "0.1";
 char     * const CONTENT_TYPE         = "application/json";
 char     * const SERVER_NAME          = "httpbin.org";
-char     * const WIFI_SSID            = "";
-char     * const WIFI_PASSWORD        = "";
+char     * const WIFI_SSID            = "Fios-5cJfH";
+char     * const WIFI_PASSWORD        = "vane29waft98fan";
 
 DHT               * const humidityTemperatureSensor = new DHT(DIGITAL_PIN_7, DHT11);
 Adafruit_seesaw   * const seesawSensor              = new Adafruit_seesaw();
@@ -64,9 +64,9 @@ BLEStringCharacteristic wifiConfigSsid("00000002-dabd-4a32-8e63-7631272ab6e3", B
 BLEStringCharacteristic wifiConfigPassword("00000003-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate, 16);
 
 
-namespace SensorResults 
+namespace SensorResults
 {
-	struct DHT11Results 
+	struct DHT11Results
 	{
 		uint8_t humidity;                                                                                                        // Humidity property is double, but as accurate as uint8_t
 		int8_t temperature;                                                                                                      // Temperature property is double, but as accurate as uint8_t
@@ -88,7 +88,7 @@ namespace SensorResults
 
 namespace DeviceCommissioning
 {
-	struct Network 
+	struct Network
 	{
 		int32_t   rssi;
 		uint8_t   encryptionType;
@@ -126,7 +126,7 @@ namespace DeviceCommissioning
 		{ ENC_TYPE_AUTO, "Auto" }
 	};
 
-	void startWifi() 
+	void startWifi()
 	{
 		wifiMode = true;
 
@@ -142,7 +142,7 @@ namespace DeviceCommissioning
 		Serial.println("WiFi initialized");
 	}
 
-	void onBLEConnected(BLEDevice central) 
+	void onBLEConnected(BLEDevice central)
 	{
 		Serial.print("Connected event, central: ");
 		Serial.println(central.address());
@@ -154,13 +154,13 @@ namespace DeviceCommissioning
 		pinMode(BLUE_LED_PIN, HIGH);
 	}
 
-	void onBLEDisconnected(BLEDevice central) 
+	void onBLEDisconnected(BLEDevice central)
 	{
 		Serial.print("Disconnected event, central: ");
 		Serial.println(central.address());
 	}
 
-	void startBle() 
+	void startBle()
 	{
 		wifiMode = false;
 
@@ -215,27 +215,27 @@ namespace DeviceCommissioning
 	}
 }
 
-SensorResults::DHT11Results * readDHT11Sensor() 
+SensorResults::DHT11Results * readDHT11Sensor()
 {
 	SensorResults::DHT11Results * const dht11Results = (SensorResults::DHT11Results *) malloc(sizeof(SensorResults::DHT11Results));  // Allocate address for results struct
 
 	dht11Results->humidity    = humidityTemperatureSensor->readHumidity();
 	dht11Results->temperature = humidityTemperatureSensor->readTemperature(true);
-	
-	return dht11Results;
-} 
 
-SensorResults::SeesawResults * readSeesawSensor() 
+	return dht11Results;
+}
+
+SensorResults::SeesawResults * readSeesawSensor()
 {
 	SensorResults::SeesawResults * const seesawResults = (SensorResults::SeesawResults *) malloc(sizeof(SensorResults::SeesawResults));
-	
+
 	seesawResults->temperature = seesawSensor->getTemp();
 	seesawResults->capacitance = seesawSensor->touchRead(0);
-	
+
 	return seesawResults;
 }
 
-SensorResults::LuxResults * readLuxSensor() 
+SensorResults::LuxResults * readLuxSensor()
 {
 	SensorResults::LuxResults * const luxResults = (SensorResults::LuxResults *) malloc(sizeof(SensorResults::LuxResults));
 
@@ -246,7 +246,7 @@ SensorResults::LuxResults * readLuxSensor()
 	return luxResults;
 }
 
-void getNetworks() 
+void getNetworks()
 {
 	Serial.println("Scanning networks");
 	int numSsid = WiFi.scanNetworks();
@@ -271,7 +271,7 @@ void getNetworks()
 	}
 }
 
-void scanner() 
+void scanner()
 {
 	if (!wifiScannerScanState.written()) {
 		return;
@@ -299,36 +299,38 @@ void scanner()
 FlashStorage(flashStorage, DeviceCommissioning::PersistentInfo);                                                                         // This stupid fucking thing is a macro and `flashStorage` is the variable declaration
 DeviceCommissioning::PersistentInfo persistentInfo;
 
-void commission() 
+void commission()
 {
 	DeviceCommissioning::startBle();
 
 	persistentInfo = flashStorage.read();
-
 	if (persistentInfo.ssid != NULL && persistentInfo.password != NULL) {
 		DeviceCommissioning::startWifi();
 	}
 	else {
 		// TODO: Get from app
 	}
-	
+
+	char * const ssid = persistentInfo.ssid == NULL ? WIFI_SSID : persistentInfo.ssid;
+	char * const password = persistentInfo.password == NULL ? WIFI_PASSWORD : persistentInfo.password;
+
 	while (status != WL_CONNECTED) {
 		Serial.println("Attempting to connect to network");
-		status = WiFi.begin(persistentInfo.ssid, persistentInfo.password);
+		status = WiFi.begin(ssid, password);
 		delay(5000);
 	}
 
 	Serial.println("Connected to network");
 
-	persistentInfo.ssid = WIFI_SSID;
-	persistentInfo.password = WIFI_PASSWORD;
+	persistentInfo.ssid = ssid;
+	persistentInfo.password = password;
 	persistentInfo.deviceId = 1;
 	persistentInfo.encryptionType = ENC_TYPE_CCMP;
-	
+
 	flashStorage.write(persistentInfo);
 }
 
-void setup() 
+void setup()
 {
 	Serial.begin(SERIAL_BAUD_RATE);
 
@@ -341,11 +343,11 @@ void setup()
 
 	if (!seesawSensor->begin(SEESAW_I2C_ADDRESS)) {
 		Serial.println("CANNOT START SEESAW");
-		for (;;) 
+		for (;;)
 			delay(5000);
 	}
 	Serial.println("SEESAW STARTED");
-	
+
 	if (!luxSensor->begin()) {
 		Serial.println("CANNOT START VEML");
 	}
@@ -355,7 +357,7 @@ void setup()
 	luxSensor->setGain(VEML7700_GAIN_1_8);
 	Serial.println("Setting Lux Sensor Integration Time");
 	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
-	
+
 	Serial.print("Beginning DHT11");
 	humidityTemperatureSensor->begin();
 
@@ -394,7 +396,7 @@ void loop() {
 	document["humidity"]    = humidity;
 	document["temperature"] = temperature;
 	document["time"]        = WiFi.getTime();
-	
+
 	serializeJson(document, postData);
 	client->post("/post", CONTENT_TYPE, postData);
 
