@@ -86,10 +86,14 @@ namespace DeviceCommissioning
 
 	struct NetworkPacket 
 	{
-		int8_t count;
+		int8_t  count;
 		Network networks[MAX_PACKET_NETWORK_COUNT];
 	};
 
+	struct NetworkList {
+		int8_t    count;
+		Network * networks;
+	};
 
 	enum {
 		IDLE          = 1,
@@ -113,83 +117,6 @@ namespace DeviceCommissioning
 		{ ENC_TYPE_NONE, "None" },
 		{ ENC_TYPE_AUTO, "Auto" }
 	};
-
-	void startWifi()
-	{
-		wifiMode = true;
-
-		Serial.println("Stopping BLE");
-		BLE.stopAdvertise();
-		BLE.stopScan();
-		BLE.end();
-
-		Serial.println("Initializing WiFi");
-		wiFiDrv.wifiDriverDeinit();
-		wiFiDrv.wifiDriverInit();
-		status = WL_IDLE_STATUS;
-
-		delay(DELAY_RATE);                                                                                                       // Give driver time to start
-
-		Serial.println("WiFi initialized");
-	}
-
-	void onBLEConnected(BLEDevice central)
-	{
-		Serial.print("Connected event, central: ");
-		Serial.println(central.address());
-
-		wifiScannerScanState.writeValue(IDLE);
-		wifiConfigState.writeValue(IDLE);
-
-		batteryPercentage.writeValue(80);
-		pinMode(BLUE_LED_PIN, HIGH);
-	}
-
-	void onBLEDisconnected(BLEDevice central)
-	{
-		Serial.print("Disconnected event, central: ");
-		Serial.println(central.address());
-	}
-
-	void startBle()
-	{
-		wifiMode = false;
-
-		Serial.println("Initializing BLE");
-
-		// initialize BLE
-		if (!BLE.begin()) {
-			Serial.println("Failed to start BLE");
-			while (1);
-		}
-
-		Serial.println("BLE Initialized");
-
-		// TODO: user configurable name?
-		BLE.setLocalName("Flourish Device");
-		BLE.setDeviceName("Flourish Device");
-		BLE.setAdvertisedService(wifiScannerService);
-
-		// setup BLE services and characteristics
-		BLE.addService(wifiScannerService);
-		BLE.addService(wifiConfiguratorService);
-		BLE.addService(batteryService);
-		
-		deviceManufacturerName.writeValue("Flourish");
-		deviceModelNumber.writeValue(MODEL);
-		deviceSerialNumber.writeValue(SERIAL_NUMBER);
-		deviceHardwareRevision.writeValue(HARDWARE_REVISION);
-		deviceFirmwareRevision.writeValue(FIRMWARE_REVISION);
-		BLE.addService(deviceInformationService);
-
-		// setup event handlers
-		BLE.setEventHandler(BLEConnected, onBLEConnected);
-		BLE.setEventHandler(BLEDisconnected, onBLEDisconnected);
-
-		BLE.setAppearance(0x0540);                                                                                               // set appearance to Generic Sensor (from BLE appearance values)
-
-		BLE.advertise();
-	}
 }
 
 BLEService              batteryService("180F");
@@ -240,10 +167,86 @@ SensorResults::LuxResults * readLuxSensor()
 	return luxResults;
 }
 
-void getNetworks()
+void startWifi()
 {
+	wifiMode = true;
+
+	Serial.println("Stopping BLE");
+	BLE.stopAdvertise();
+	BLE.stopScan();
+	BLE.end();
+
+	Serial.println("Initializing WiFi");
+	wiFiDrv.wifiDriverDeinit();
+	wiFiDrv.wifiDriverInit();
+	status = WL_IDLE_STATUS;
+
+	delay(DELAY_RATE);                                                                                                       // Give driver time to start
+
+	Serial.println("WiFi initialized");
+}
+
+void onBLEConnected(BLEDevice central)
+{
+	Serial.print("Connected event, central: ");
+	Serial.println(central.address());
+
+	wifiScannerScanState.writeValue(DeviceCommissioning::IDLE);
+	wifiConfigState.writeValue(DeviceCommissioning::IDLE);
+
+	batteryPercentage.writeValue(80);
+	pinMode(BLUE_LED_PIN, HIGH);
+}
+
+void onBLEDisconnected(BLEDevice central)
+{
+	Serial.print("Disconnected event, central: ");
+	Serial.println(central.address());
+}
+
+void startBle()
+{
+	wifiMode = false;
+
+	Serial.println("Initializing BLE");
+
+	// initialize BLE
+	if (!BLE.begin()) {
+		Serial.println("Failed to start BLE");
+		while (1);
+	}
+
+	Serial.println("BLE Initialized");
+
+	// TODO: user configurable name?
+	BLE.setLocalName("Flourish Device");
+	BLE.setDeviceName("Flourish Device");
+	BLE.setAdvertisedService(wifiScannerService);
+
+	// setup BLE services and characteristics
+	BLE.addService(wifiScannerService);
+	BLE.addService(wifiConfiguratorService);
+	BLE.addService(batteryService);
+	
+	deviceManufacturerName.writeValue("Flourish");
+	deviceModelNumber.writeValue(MODEL);
+	deviceSerialNumber.writeValue(SERIAL_NUMBER);
+	deviceHardwareRevision.writeValue(HARDWARE_REVISION);
+	deviceFirmwareRevision.writeValue(FIRMWARE_REVISION);
+	BLE.addService(deviceInformationService);
+
+	// setup event handlers
+	BLE.setEventHandler(BLEConnected, onBLEConnected);
+	BLE.setEventHandler(BLEDisconnected, onBLEDisconnected);
+
+	BLE.setAppearance(0x0540);                                                                                               // set appearance to Generic Sensor (from BLE appearance values)
+
+	BLE.advertise();
+}
+
+DeviceCommissioning::NetworkList getNetworks() {
 	Serial.println("Scanning networks");
-	int numSsid = WiFi.scanNetworks();
+	int8_t numSsid = WiFi.scanNetworks();
 
 	if (numSsid == -1) {
 		Serial.println("Couldn't get WiFi connection");
@@ -252,18 +255,28 @@ void getNetworks()
 
 	Serial.println("Number of available networks: " + String(numSsid));
 
-	for (size_t i = 0; i < numSsid; i++)
-	{
-		Serial.println("Network " + String(i) + ": " + String(WiFi.SSID(i)));
-		Serial.println("Signal: " + String(WiFi.RSSI(i)) + " dBm");
-		Serial.println("Encryption: " + DeviceCommissioning::encryptionTypeMap[WiFi.encryptionType(i)]);
-		DeviceCommissioning::Network network = {
+	DeviceCommissioning::Network* networks = new DeviceCommissioning::Network[numSsid];
+	for (size_t i = 0; i < numSsid; i++) {
+		networks[i] = {
 			WiFi.RSSI(i),
+			{},
 			WiFi.encryptionType(i),
-			(char *) WiFi.SSID(i)
 		};
+
+		// copy ssid into network buffer
+		strncpy(networks[i].ssid, WiFi.SSID(i), 32);
+
+		Serial.println("Network " + String(i) + ": " + String( networks[i].ssid ));
+		Serial.println("Signal: " + String(networks[i].rssi) + " dBm");
+		Serial.println("Encryption: " + DeviceCommissioning::encryptionTypeMap[networks[i].encryptionType]);
 	}
+
+	return DeviceCommissioning::NetworkList {
+		numSsid,
+		networks
+	};
 }
+
 
 void scanner()
 {
@@ -333,11 +346,11 @@ DeviceCommissioning::PersistentInfo persistentInfo;
 
 inline void commission() 
 {
-	DeviceCommissioning::startBle();
+	startBle();
 
 	persistentInfo = flashStorage.read();
 	if (persistentInfo.ssid != NULL && persistentInfo.password != NULL) {
-		DeviceCommissioning::startWifi();
+		startWifi();
 	}
 	else {
 		// TODO: Get from app
@@ -362,7 +375,7 @@ inline void commission()
 	flashStorage.write(persistentInfo);
 }
 
-inline void addCharacteristics();
+inline void addCharacteristics()
 {
 	wifiScannerService.addCharacteristic(wifiScannerScanState);
 	wifiScannerService.addCharacteristic(wifiScannerAPList);
