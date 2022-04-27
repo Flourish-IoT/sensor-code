@@ -43,28 +43,7 @@ HttpClient * const client = new HttpClient(wifi, SERVER_NAME, WIFI_PORT);
 bool    wifiMode = false;
 int16_t status   = WL_IDLE_STATUS;
 
-BLEService batteryService("180F");
-BLEByteCharacteristic batteryPercentage("2A19", BLERead);
-
-BLEService deviceInformationService("180A");
-BLEStringCharacteristic deviceManufacturerName("2A29", BLERead, 20);
-BLEStringCharacteristic deviceModelNumber("2A24", BLERead, 20);
-BLEStringCharacteristic deviceSerialNumber("2A25", BLERead, 20);
-BLEStringCharacteristic deviceHardwareRevision("2A27", BLERead, 20);
-BLEStringCharacteristic deviceFirmwareRevision("2A26", BLERead, 20);
-
-// from https://community.silabs.com/s/share/a5U1M000000ko4IUAQ/how-to-use-bluetooth-lowenergy-for-wifi-commissioning?language=en_US
-// TODO: create proper UUID https://devzone.nordicsemi.com/guides/short-range-guides/b/bluetooth-low-energy/posts/ble-services-a-beginners-tutorial
-BLEService wifiScannerService("00000000-b50b-48b7-87e2-a6d52eb9cc9c");
-BLEByteCharacteristic wifiScannerScanState("00000001-b50b-48b7-87e2-a6d52eb9cc9c", BLERead | BLEWrite | BLEIndicate);
-
-BLEService wifiConfiguratorService("00000000-dabd-4a32-8e63-7631272ab6e3");
-BLEByteCharacteristic wifiConfigState("00000001-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate);
-BLEStringCharacteristic wifiConfigSsid("00000002-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate, 32);
-BLEStringCharacteristic wifiConfigPassword("00000003-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate, 16);
-
-
-namespace SensorResults
+namespace SensorResults 
 {
 	struct DHT11Results
 	{
@@ -90,10 +69,12 @@ namespace DeviceCommissioning
 {
 	struct Network
 	{
-		int32_t   rssi;
-		uint8_t   encryptionType;
-		char    * ssid;
+		int32_t rssi;
+		uint8_t encryptionType;
+		char    ssid[32];
 	};
+
+	static constexpr const uint16_t MAX_PACKET_NETWORK_COUNT = (512 - sizeof(int8_t))/sizeof(Network);
 
 	struct PersistentInfo
 	{
@@ -102,6 +83,13 @@ namespace DeviceCommissioning
 		uint32_t   deviceId;
 		uint8_t    encryptionType;
 	};
+
+	struct NetworkPacket 
+	{
+		int8_t count;
+		Network networks[MAX_PACKET_NETWORK_COUNT];
+	};
+
 
 	enum {
 		IDLE          = 1,
@@ -139,6 +127,9 @@ namespace DeviceCommissioning
 		wiFiDrv.wifiDriverDeinit();
 		wiFiDrv.wifiDriverInit();
 		status = WL_IDLE_STATUS;
+
+		delay(DELAY_RATE);                                                                                                       // Give driver time to start
+
 		Serial.println("WiFi initialized");
 	}
 
@@ -164,9 +155,6 @@ namespace DeviceCommissioning
 	{
 		wifiMode = false;
 
-		Serial.println("Stopping WiFi");
-		WiFi.end();
-
 		Serial.println("Initializing BLE");
 
 		// initialize BLE
@@ -183,21 +171,10 @@ namespace DeviceCommissioning
 		BLE.setAdvertisedService(wifiScannerService);
 
 		// setup BLE services and characteristics
-		wifiScannerService.addCharacteristic(wifiScannerScanState);
 		BLE.addService(wifiScannerService);
-
-		wifiConfiguratorService.addCharacteristic(wifiConfigState);
 		BLE.addService(wifiConfiguratorService);
-
-		batteryService.addCharacteristic(batteryPercentage);
 		BLE.addService(batteryService);
-
-		deviceInformationService.addCharacteristic(deviceManufacturerName);
-		deviceInformationService.addCharacteristic(deviceModelNumber);
-		deviceInformationService.addCharacteristic(deviceSerialNumber);
-		deviceInformationService.addCharacteristic(deviceHardwareRevision);
-		deviceInformationService.addCharacteristic(deviceFirmwareRevision);
-
+		
 		deviceManufacturerName.writeValue("Flourish");
 		deviceModelNumber.writeValue(MODEL);
 		deviceSerialNumber.writeValue(SERIAL_NUMBER);
@@ -215,7 +192,24 @@ namespace DeviceCommissioning
 	}
 }
 
-SensorResults::DHT11Results * readDHT11Sensor()
+BLEService              batteryService("180F");
+BLEByteCharacteristic   batteryPercentage("2A19", BLERead);
+BLEService              deviceInformationService("180A");
+BLEStringCharacteristic deviceManufacturerName("2A29", BLERead, 20);
+BLEStringCharacteristic deviceModelNumber("2A24", BLERead, 20);
+BLEStringCharacteristic deviceSerialNumber("2A25", BLERead, 20);
+BLEStringCharacteristic deviceHardwareRevision("2A27", BLERead, 20);
+BLEStringCharacteristic deviceFirmwareRevision("2A26", BLERead, 20);
+BLEService              wifiScannerService("00000000-b50b-48b7-87e2-a6d52eb9cc9c");
+BLEByteCharacteristic   wifiScannerScanState("00000001-b50b-48b7-87e2-a6d52eb9cc9c", BLERead | BLEWrite | BLEIndicate);
+BLECharacteristic       wifiScannerAPList("00000002-b50b-48b7-87e2-a6d52eb9cc9c", BLERead | BLEIndicate, sizeof(DeviceCommissioning::NetworkPacket));
+BLEByteCharacteristic   wifiScannerPacketCount("00000003-b50b-48b7-87e2-a6d52eb9cc9c", BLERead | BLEIndicate);
+BLEService              wifiConfiguratorService("00000000-dabd-4a32-8e63-7631272ab6e3");
+BLEByteCharacteristic   wifiConfigState("00000001-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate);
+BLEStringCharacteristic wifiConfigSsid("00000002-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate, 32);
+BLEStringCharacteristic wifiConfigPassword("00000003-dabd-4a32-8e63-7631272ab6e3", BLERead | BLEWrite | BLEIndicate, 16);
+
+SensorResults::DHT11Results * readDHT11Sensor() 
 {
 	SensorResults::DHT11Results * const dht11Results = (SensorResults::DHT11Results *) malloc(sizeof(SensorResults::DHT11Results));  // Allocate address for results struct
 
@@ -284,13 +278,51 @@ void scanner()
 			Serial.println("IDLE");
 			delay(1000);
 			break;
-		case DeviceCommissioning::SCAN:
+		case DeviceCommissioning::SCAN: {
 			Serial.println("Starting WiFi scan");
-			DeviceCommissioning::startWifi();
-			getNetworks();
-			DeviceCommissioning::startBle();
+			startWifi();
+
+			wifiScannerScanState.writeValue(DeviceCommissioning::SCANNING);
+
+			DeviceCommissioning::NetworkList networkInfo = getNetworks();
+			// restart ble and send values
+			startBle();
+
+			Serial.println("Found " + String(networkInfo.count) + " networks");
+
+			// chunk networks into packets
+			// DeviceCommissioning::NetworkPacket packets[5];
+			DeviceCommissioning::NetworkPacket packet = {0, {}};
+			for (size_t i = 0; i < networkInfo.count; i++) {
+				if (packet.count >= DeviceCommissioning::MAX_PACKET_NETWORK_COUNT) {
+					// TODO: send multiple packets
+					Serial.println("Packet overflow, ignoring other networks");
+					break;
+				}
+				Serial.println("Copying network " + String(i));
+				// copy network into packet memory and increment count
+				packet.networks[i] = networkInfo.networks[i];
+				packet.count++;
+			}
+
+			Serial.println("Converting packet to bytes");
+			Serial.println("Packet contains " + String(packet.count) + " networks");
+
+			char * buffer = reinterpret_cast<char*>(&packet);
+			// print out buffer for debugging
+			for (size_t j = 0; j < sizeof(packet); j++) {
+				Serial.print((uint8_t) buffer[j]);
+				Serial.print(", ");
+			}
+			Serial.println("");
+			Serial.println("size: " + String(sizeof(packet)));
+			wifiScannerAPList.writeValue(buffer, sizeof(packet), true);
+			wifiScannerPacketCount.writeValue(networkInfo.count);
 			wifiScannerScanState.writeValue(DeviceCommissioning::SCANNED);
+			delete[] networkInfo.networks;
+			Serial.println("Scan complete");
 			break;
+		}
 		default:
 			break;
 	}
@@ -299,7 +331,7 @@ void scanner()
 FlashStorage(flashStorage, DeviceCommissioning::PersistentInfo);                                                                         // This stupid fucking thing is a macro and `flashStorage` is the variable declaration
 DeviceCommissioning::PersistentInfo persistentInfo;
 
-void commission()
+inline void commission() 
 {
 	DeviceCommissioning::startBle();
 
@@ -330,7 +362,24 @@ void commission()
 	flashStorage.write(persistentInfo);
 }
 
-void setup()
+inline void addCharacteristics();
+{
+	wifiScannerService.addCharacteristic(wifiScannerScanState);
+	wifiScannerService.addCharacteristic(wifiScannerAPList);
+	wifiScannerService.addCharacteristic(wifiScannerPacketCount);
+	wifiScannerService.addCharacteristic(wifiScannerScanState);
+	wifiConfiguratorService.addCharacteristic(wifiConfigState);
+	batteryService.addCharacteristic(batteryPercentage);
+	
+	deviceInformationService.addCharacteristic(deviceManufacturerName);
+	deviceInformationService.addCharacteristic(deviceModelNumber);
+	deviceInformationService.addCharacteristic(deviceSerialNumber);
+	deviceInformationService.addCharacteristic(deviceHardwareRevision);
+	deviceInformationService.addCharacteristic(deviceFirmwareRevision);
+
+}
+
+void setup() 
 {
 	Serial.begin(SERIAL_BAUD_RATE);
 
@@ -364,8 +413,9 @@ void setup()
 	// #endregion
 
 	commission();
-}
 
+	addCharacteristics();
+}
 
 void loop() {
 	SensorResults::DHT11Results  * const dht11Results  = readDHT11Sensor();
@@ -384,26 +434,28 @@ void loop() {
 
 	central = BLE.central();
 
-	digitalWrite(BLUE_LED_PIN, HIGH);
+	if (central) {
+		while (central.connected()) {
+			scanner();
 
-	ip = WiFi.localIP();
-	Serial.println("IP: " + String(ip));
-	Serial.println("Signal strength (RSSI): " + String(WiFi.RSSI()));
+			digitalWrite(BLUE_LED_PIN, HIGH);
 
-	StaticJsonDocument<200> document;
-	document["water"]       = capacitance;
-	document["light"]       = luminescense;
-	document["humidity"]    = humidity;
-	document["temperature"] = temperature;
-	document["time"]        = WiFi.getTime();
+			StaticJsonDocument<200> document;
+			document["water"]       = capacitance;
+			document["light"]       = luminescense;
+			document["humidity"]    = humidity;
+			document["temperature"] = temperature;
+			document["time"]        = WiFi.getTime();
 
-	serializeJson(document, postData);
-	client->post("/post", CONTENT_TYPE, postData);
+			serializeJson(document, postData);
+			client->post("/post", CONTENT_TYPE, postData);
 
-	status = client->responseStatusCode();
-	Serial.print("Status Code: ");
-	Serial.println(status);
-	Serial.println(client->responseBody());
+			status = client->responseStatusCode();
+			Serial.print("Status Code: ");
+			Serial.println(status);
+			Serial.println(client->responseBody());
+		}
+	}
 
 	delay(DELAY_RATE);
 }
