@@ -13,7 +13,7 @@ DHT               * const humidityTemperatureSensor = new DHT(DIGITAL_PIN_7, DHT
 Adafruit_seesaw   * const seesawSensor              = new Adafruit_seesaw();
 Adafruit_VEML7700 * const luxSensor                 = new Adafruit_VEML7700();
 
-SensorResults::DHT11Results * SensorOperations::readDHT11Sensor() 
+SensorResults::DHT11Results * SensorOperations::readDHT11Sensor()
 {
 	SensorResults::DHT11Results * const dht11Results = (SensorResults::DHT11Results *) malloc(sizeof(SensorResults::DHT11Results));  // Allocate address for results struct
 
@@ -50,20 +50,22 @@ void SensorOperations::setupSensors()
 
 	if (!seesawSensor->begin(SEESAW_I2C_ADDRESS)) {
 		Serial.println("CANNOT START SEESAW");
-		for (;;) 
+		for (;;)
 			delay(5000);
 	}
 	Serial.println("SEESAW STARTED");
-	
+
 	if (!luxSensor->begin()) {
 		Serial.println("CANNOT START VEML");
+		for (;;)
+			delay(5000);
 	}
 	Serial.println("VEML STARTED");
 	Serial.println("Setting Lux Sensor Gain");
 	luxSensor->setGain(VEML7700_GAIN_1_8);
 	Serial.println("Setting Lux Sensor Integration Time");
 	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
-	
+
 	Serial.print("Beginning DHT11");
 	humidityTemperatureSensor->begin();
 }
