@@ -17,7 +17,7 @@ BLEDevice central;
 
 uint8_t deviceState = DEVICE_STATE::IDLE;
 
-inline void setupCommissioning() 
+inline void setupCommissioning()
 {
 	Serial.println("Setting up commissioning");
 
@@ -28,7 +28,7 @@ inline void setupCommissioning()
 	Serial.println("Commissioning setup complete");
 }
 
-inline void setupDevice() 
+inline void setupDevice()
 {
 	Serial.println("All services initialized, setting up device");
 	SensorOperations::setupSensors();
@@ -37,7 +37,7 @@ inline void setupDevice()
 	digitalWrite(GREEN_LED, HIGH);
 }
 
-void readSensors() 
+void readSensors()
 {
 	StaticJsonDocument<200> document;
 	char * data;
@@ -87,13 +87,13 @@ void setup()
 	BluetoothOperations::initializeServices();
 
 #if COMMISSION
-	if (BluetoothOperations::servicesInitialized()) 
+	if (BluetoothOperations::servicesInitialized())
 #endif
 	{
 		setupDevice();
 	}
-#if COMMISSION 
-	else 
+#if COMMISSION
+	else
 	{
 		setupCommissioning();
 	}
