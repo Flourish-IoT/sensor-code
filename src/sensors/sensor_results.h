@@ -4,8 +4,8 @@ namespace SensorResults
 {
 	struct DHT11Results
 	{
-		char humidity;                                                                                                         // Humidity property is double, but as accurate as uint8_t
-		char temperature;                                                                                                      // Temperature property is double, but as accurate as uint8_t
+		char humidity;     // Humidity property is double, but as accurate as uint8_t
+		char temperature;  // Temperature property is double, but as accurate as uint8_t
 	};
 
 	struct SeesawResults

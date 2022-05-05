@@ -1,19 +1,27 @@
-#include <Arduino.h>
-#include <ArduinoBLE.h>
-#include <WiFiNINA.h>
-#include <vector>
+#include "Arduino.h"
+#include "ArduinoBLE.h"
+#include "WiFiNINA.h"
+#include "vector"
 
-#include "wifi.h"
+#include "./ble.h"
+#include "./wifi.h"
 #include "../common.h"
 #include "../services/base_service.h"
-#include "../services/misc_services.h"
+#include "../services/battery_service.h"
+#include "../services/device_information_service.h"
 #include "../services/commissioning_service.h"
 #include "../services/wifi_service.h"
 
 // TODO: vector not portable, switch to arrays
-std::vector<BaseService*> services = { new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), new WiFiService(), new BatteryService(), new DeviceInformationService(), };
+std::vector<BaseService *> services = { 
+	new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), 
+	new WiFiService(), 
+	new BatteryService(), 
+	new DeviceInformationService(), 
+};
 
-void onBLEConnected(BLEDevice central) {
+void BluetoothOperations::onBLEConnected(BLEDevice const central) 
+{
 	Serial.print("Connected event, central: ");
 	Serial.println(central.address());
 
@@ -23,31 +31,36 @@ void onBLEConnected(BLEDevice central) {
 	pinMode(BLUE_LED, HIGH);
 }
 
-void onBLEDisconnected(BLEDevice central) {
+void BluetoothOperations::onBLEDisconnected(BLEDevice const central) 
+{
 	Serial.print("Disconnected event, central: ");
 	Serial.println(central.address());
+
 	// TODO: cleanup
 
 	for (auto service : services)
 		service->onBLEDisconnected();
 }
 
-void setupServices() {
+void BluetoothOperations::setupServices() 
+{
 	// setup characteristics
 	for (auto service : services)
 		service->registerAttributes();
 
 	// setup event handlers
-	BLE.setEventHandler(BLEConnected, onBLEConnected);
-	BLE.setEventHandler(BLEDisconnected, onBLEDisconnected);
+	BLE.setEventHandler(BLEConnected, BluetoothOperations::onBLEConnected);
+	BLE.setEventHandler(BLEDisconnected, BluetoothOperations::onBLEDisconnected);
 }
 
-void registerBleServices() {
+void BluetoothOperations::registerBleServices() 
+{
 	for (auto service : services)
 		service->registerService();
 }
 
-void startBle() {
+void BluetoothOperations::startBle() 
+{
 	// stop wifi
 	Serial.println("Stopping WiFi");
 	WiFi.end();
@@ -70,24 +83,24 @@ void startBle() {
 	Serial.println("BLE Initialized");
 }
 
-void executeServices() {
-	for (auto service : services) {
+void BluetoothOperations::executeServices() 
+{
+	for (auto service : services)
 		service->execute();
-	}
 }
 
-void initializeServices() {
-	for (auto service : services) {
+void BluetoothOperations::initializeServices() 
+{
+	for (auto service : services)
 		service->initialize();
-	}
 }
 
-bool servicesInitialized() {
+bool BluetoothOperations::servicesInitialized() 
+{
 	// makes sure every service is initialized
-	for (auto service : services) {
+	for (auto service : services)
 		if (!service->isInitialized())
 			return false;
-	}
 
 	return true;
 }

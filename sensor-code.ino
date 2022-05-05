@@ -1,33 +1,25 @@
-#include "WiFiNINA.h"
 #include "ArduinoBLE.h"
-#include "FlashStorage.h"
 #include "ArduinoJson.h"
-#include "ArduinoHttpClient.h"
+#include "ctime"
+#include "FlashStorage.h"
 
-#include "src/common.h"
-#include "src/communication/ble.h"
-#include "src/sensors/sensor_results.h"
-#include "src/sensors/sensor_operations.h"
+#include "./src/common.h"
+#include "./src/communication/ble.h"
+#include "./src/communication/wifi.h"
+#include "./src/sensors/sensor_results.h"
+#include "./src/sensors/sensor_operations.h"
 
-String postData;
-IPAddress ip;
-WiFiClient wifi;
 BLEDevice central;
 
-int             deviceState  = DEVICE_STATE::IDLE;
-char    * const SERVER_NAME  = "httpbin.org";
-uint8_t   const WIFI_PORT    = 80;
-char    * const CONTENT_TYPE = "application/json";
-int16_t         status       = WL_IDLE_STATUS;
+uint8_t deviceState = DEVICE_STATE::IDLE;
 
-HttpClient * const client = new HttpClient(wifi, SERVER_NAME, WIFI_PORT);
-
-inline void setupCommissioning() {
+inline void setupCommissioning() 
+{
 	Serial.println("Setting up commissioning");
 
-	setupServices();
+	BluetoothOperations::setupServices();
 	deviceState = DEVICE_STATE::COMMISSIONING;
-	startBle();
+	BluetoothOperations::startBle();
 
 	Serial.println("Commissioning setup complete");
 }
@@ -40,6 +32,9 @@ inline void setupDevice() {
 }
 
 void readSensors() {
+	StaticJsonDocument<200> document;
+	char * data;
+
 	SensorResults::DHT11Results  * const dht11Results  = SensorOperations::readDHT11Sensor();
 	SensorResults::SeesawResults * const seesawResults = SensorOperations::readSeesawSensor();
 	SensorResults::LuxResults    * const luxResults    = SensorOperations::readLuxSensor();
@@ -56,35 +51,35 @@ void readSensors() {
 
 	digitalWrite(BLUE_LED, HIGH);
 
-	StaticJsonDocument<200> document;
 	document["water"]       = capacitance;
 	document["light"]       = luminescense;
 	document["humidity"]    = humidity;
 	document["temperature"] = temperature;
-	document["time"]        = WiFi.getTime();
+	document["time"]        = (float) std::time(nullptr);
 
-	serializeJson(document, postData);
-	client->post("/post", CONTENT_TYPE, postData);
+	size_t size = sizeof(data) / sizeof(char);
 
-	status = client->responseStatusCode();
-	Serial.print("Status Code: ");
-	Serial.println(status);
-	Serial.println(client->responseBody());
+	serializeJson(document, data, size);
+	WifiOperations::PostResponse * const response = WifiOperations::postData(data);
+	Serial.print("Status: ");
+	Serial.print(response->status);
+	Serial.print(";\tResponse: ");
+	Serial.println(response->body);
 }
 
 void setup()
 {
-	Serial.begin(9600);
-	while (!Serial);
+	Serial.begin(SERIAL_RATE);
+	while (!Serial);  // Wait for serial monitor to be open
 
-	// initialize pins
+	// initialize LED pins
 	pinMode(RED_LED, OUTPUT);
 	pinMode(GREEN_LED, OUTPUT);
 	pinMode(BLUE_LED, OUTPUT);
 
-	initializeServices();
+	BluetoothOperations::initializeServices();
 
-	if (servicesInitialized()) {
+	if (BluetoothOperations::servicesInitialized()) {
 		setupDevice();
 	} else {
 		setupCommissioning();
@@ -93,30 +88,28 @@ void setup()
 	Serial.println("Setup complete");
 }
 
+
 void loop()
 {
 	switch (deviceState)
 	{
-		case DEVICE_STATE::COMMISSIONING: {
-			BLEDevice central = BLE.central();
+		case DEVICE_STATE::COMMISSIONING:
+			central = BLE.central();
 
 			digitalWrite(BLUE_LED, HIGH);
 
-			if (central) {
-				while (central.connected()) {
-					executeServices();
-				}
-			}
+			if (central)
+				while (central.connected())
+					BluetoothOperations::executeServices();
 
-			delay(500);
+			delay(DELAY_RATE);
 			digitalWrite(BLUE_LED, LOW);
-			delay(500);
+			delay(DELAY_RATE);
 			break;
-		}
 		case DEVICE_STATE::COMMISSIONED:
 			Serial.println("Commisioned loop");
 			readSensors();
-			delay(1000);
+			delay(DELAY_RATE);
 			break;
 		default:
 			break;

@@ -1,9 +1,16 @@
 #pragma once
 
-void startBle();
+namespace BluetoothOperations
+{
+	void startBle();
 
-void setupServices();
-void executeServices();
+	void registerBleServices();
+	void onBLEConnected(BLEDevice const central);
+	void onBLEDisconnected(BLEDevice const central);
 
-void initializeServices();
-bool servicesInitialized();
+	void setupServices();
+	void executeServices();
+
+	void initializeServices();
+	bool servicesInitialized();
+}

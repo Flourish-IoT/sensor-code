@@ -3,14 +3,27 @@
 class BaseService 
 {
 public:
-	virtual void registerService() = 0;
-	virtual void registerAttributes() = 0;
+	virtual void registerService()    const = 0;
+	virtual void registerAttributes() const = 0;
 
-	virtual int  execute() {};
-
-	virtual int  initialize() {};
-	virtual bool isInitialized() { return true; };
-
-	virtual void onBLEConnected() {};
-	virtual void onBLEDisconnected() {};
+	virtual int  execute() 
+	{
+		// empty
+	};
+	virtual int  initialize()              
+	{
+		// empty
+	};
+	virtual bool isInitialized()     const 
+	{ 
+		return true; 
+	};
+	virtual void onBLEConnected()    const 
+	{
+		// empty
+	};
+	virtual void onBLEDisconnected() const 
+	{
+		// empty
+	};
 };

@@ -1,4 +1,16 @@
 #pragma once
-#include <ArduinoBLE.h>
 
-void startWifi();
+#include "Arduino.h"
+#include "ArduinoBLE.h"
+
+namespace WifiOperations
+{ 
+	struct PostResponse
+	{
+		uint16_t   status;
+		char     * body;
+	};
+
+	void startWifi();
+	PostResponse * postData(char * const);
+}

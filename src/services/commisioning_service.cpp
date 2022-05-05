@@ -1,8 +1,9 @@
-#include <Arduino.h>
-#include <ArduinoBLE.h>
-#include <FlashStorage.h>
+#include "Arduino.h"
+#include "ArduinoBLE.h"
+#include "FlashStorage.h"
+
 #include "../common.h"
-#include "commissioning_service.h"
+#include "./commissioning_service.h"
 
 BLEService                     commissioningService("00000000-1254-4046-81d7-676ba8909661");
 BLEUnsignedShortCharacteristic commissioningState("00000001-1254-4046-81d7-676ba8909661", BLERead | BLEWrite | BLEIndicate);
@@ -11,19 +12,19 @@ BLEStringCharacteristic        commissioningDeviceToken("00000003-1254-4046-81d7
 BLEStringCharacteristic        commissioningDeviceName("00000004-1254-4046-81d7-676ba8909661", BLERead | BLEWrite | BLEIndicate, BLE_MAX_CHARACTERISTIC_SIZE);
 BLEByteCharacteristic          commissioningDeviceType("00000005-1254-4046-81d7-676ba8909661", BLERead | BLEIndicate);
 
-CommissioningService::CommissioningService(int deviceType) 
+CommissioningService::CommissioningService(int const deviceType) 
 {
-	this->deviceType = deviceType;
+	this->_deviceType = deviceType;
 }
 
-void CommissioningService::registerService() 
+void CommissioningService::registerService() const
 {
 	Serial.println("Registering Commisioning Service");
 	BLE.addService(commissioningService);
 	BLE.setAdvertisedService(commissioningService);
 }
 
-void CommissioningService::registerAttributes() 
+void CommissioningService::registerAttributes() const
 {
 	Serial.println("Registering Commisioning Service Attributes");
 	commissioningService.addCharacteristic(commissioningState);
@@ -40,12 +41,12 @@ void CommissioningService::registerAttributes()
 	});
 
 	commissioningState.writeValue(COMMISSIONING_STATE::IDLE);
-	commissioningDeviceType.writeValue(deviceType);
+	commissioningDeviceType.writeValue(this->_deviceType);
 }
 
-FlashStorage(deviceStorage, DeviceInfo);
+FlashStorage(deviceStorage, DeviceInformation);
 
-int CommissioningService::saveDeviceInformation() 
+int CommissioningService::saveDeviceInformation() const
 {
 	Serial.println("Saving information for device " + String(commissioningDeviceID.value()));
 
@@ -54,7 +55,7 @@ int CommissioningService::saveDeviceInformation()
 		return -1;
 	}
 
-	DeviceInfo info = {
+	DeviceInformation info = {
 		commissioningDeviceID.value(),
 		commissioningDeviceToken.value(),
 		commissioningDeviceName.value(),
@@ -66,16 +67,16 @@ int CommissioningService::saveDeviceInformation()
 	return 0;
 }
 
-int CommissioningService::initialize() 
+int CommissioningService::initialize()
 {
 	Serial.println("Initializing Commissioning Service");
 	Serial.println("Loading Device Information");
-	deviceInfo = deviceStorage.read();
+	this->_deviceInfo = deviceStorage.read();
 
 	if (isInitialized()) {
 		Serial.println("Loaded Device Information");
-		Serial.println("Name: " + deviceInfo.name);
-		Serial.println("ID: " + String( deviceInfo.deviceId ));
+		Serial.println("Name: " + this->_deviceInfo.name);
+		Serial.println("ID: " + String(this->_deviceInfo.deviceId));
 		// TODO: setup device
 	}
 
@@ -83,13 +84,13 @@ int CommissioningService::initialize()
 	return 0;
 }
 
-bool CommissioningService::isInitialized() 
+bool CommissioningService::isInitialized() const
 {
 	// TODO: add token
-	return deviceInfo.deviceId != 0;
+	return this->_deviceInfo.deviceId != 0;
 }
 
-int CommissioningService::execute() 
+int CommissioningService::execute()
 {
 	if (commissioningState.written()) {
 		return 1;

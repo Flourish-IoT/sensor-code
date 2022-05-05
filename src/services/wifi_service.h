@@ -1,6 +1,8 @@
 #pragma once
-#include <ArduinoBLE.h>
-#include "base_service.h"
+
+#include "ArduinoBLE.h"
+
+#include "./base_service.h"
 
 namespace WIFI_COMMISSIONING_STATE 
 {
@@ -34,17 +36,17 @@ class WiFiService : public BaseService
 public:
 	WiFiService() = default;
 	
-	void  registerService()    override;
-	void  registerAttributes() override;
-	int   execute()            override;
-	int   initialize()         override;
-	bool  isInitialized()      override;
+	void  registerService()    const override;
+	void  registerAttributes() const override;
+	int   execute()                  override;
+	int   initialize()               override;
+	bool  isInitialized()      const override;
 
 
 private:
-	Network network;
+	Network _network;
 	
-	int scanNetworks();
-	int joinNetwork();
+	int scanNetworks() const;
+	int joinNetwork()  const;
 	int saveNetwork();
 };

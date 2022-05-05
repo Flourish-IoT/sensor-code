@@ -1,9 +1,9 @@
-#include <Arduino.h>
-#include <WiFiNINA.h>
-#include <ArduinoBLE.h>
-#include <FlashStorage.h>
+#include "Arduino.h"
+#include "WiFiNINA.h"
+#include "ArduinoBLE.h"
+#include "FlashStorage.h"
 
-#include "wifi_service.h"
+#include "./wifi_service.h"
 #include "../common.h"
 #include "../communication/ble.h"
 #include "../communication/wifi.h"
@@ -14,13 +14,13 @@ BLEStringCharacteristic wifiAPList("00000002-b50b-48b7-87e2-a6d52eb9cc9c", BLERe
 BLEStringCharacteristic wifiSsid("00000003-b50b-48b7-87e2-a6d52eb9cc9c", BLERead | BLEWrite | BLEIndicate, 32);
 BLEStringCharacteristic wifiPassword("00000004-b50b-48b7-87e2-a6d52eb9cc9c", BLEWrite | BLEIndicate, 64);
 
-void WiFiService::registerService() 
+void WiFiService::registerService() const
 {
 	Serial.println("Registering WiFi Service");
 	BLE.addService(wifiService);
 }
 
-void WiFiService::registerAttributes() 
+void WiFiService::registerAttributes() const
 {
 	Serial.println("Registering WiFi Service Attributes");
 	wifiService.addCharacteristic(wifiState);
@@ -31,10 +31,10 @@ void WiFiService::registerAttributes()
 	wifiState.writeValue(WIFI_COMMISSIONING_STATE::IDLE);
 }
 
-int WiFiService::scanNetworks() 
+int WiFiService::scanNetworks() const
 {
 	Serial.println("Starting WiFi scan");
-	startWifi();
+	WifiOperations::startWifi();
 
 	int8_t numSsid = WiFi.scanNetworks();
 	Serial.println("Number of available networks: " + String(numSsid));
@@ -71,19 +71,19 @@ int WiFiService::scanNetworks()
 	Serial.println("Output length: " + String(outputStr.length()));
 
 	// restart ble and send available AP list
-	startBle();
+	BluetoothOperations::startBle();
 	wifiAPList.writeValue(outputStr);
 
 	Serial.println("Scan complete");
 	return 0;
 }
 
-int WiFiService::joinNetwork() 
+int WiFiService::joinNetwork() const
 {
 	Serial.println("Joining Network: " + wifiSsid.value());
 	wifiState.writeValue(WIFI_COMMISSIONING_STATE::JOINING);
 
-	startWifi();
+	WifiOperations::startWifi();
 
 	Serial.println("Attempting to join");
 	WiFi.setTimeout(10 * 1000);
@@ -114,7 +114,7 @@ int WiFiService::joinNetwork()
 		return -1;
 	}
 
-	startBle();
+	BluetoothOperations::startBle();
 	wifiState.writeValue(WIFI_COMMISSIONING_STATE::JOINED);
 
 	return 0;
@@ -125,12 +125,12 @@ int WiFiService::saveNetwork()
 {
 	Serial.println("Saving network " + wifiSsid.value());
 
-	network = {
+	this->_network = {
 		wifiSsid.value(),
 		wifiPassword.value()
 	};
 
-	networkStorage.write(network);
+	networkStorage.write(this->_network);
 	Serial.println("WiFi Information Saved");
 	return 0;
 }
@@ -139,22 +139,23 @@ int WiFiService::initialize()
 {
 	Serial.println("Initializing WiFi service");
 	Serial.println("Loading Network");
-	network = networkStorage.read();
+	this->_network = networkStorage.read();
 
 	if (isInitialized()) {
 		Serial.println("Loaded Network");
-		Serial.println("SSID: " + network.ssid);
+		Serial.println("SSID: " + this->_network.ssid);
 		// TODO: setup wifi
 	}
 	return 0;
 }
 
-bool WiFiService::isInitialized() 
+bool WiFiService::isInitialized() const
 {
-	return network.ssid.length() > 0;
+	return this->_network.ssid.length() > 0;
 }
 
-int WiFiService::execute() {
+int WiFiService::execute() 
+{
 	if (!wifiState.written()) {
 		return 0;
 	}
@@ -162,25 +163,20 @@ int WiFiService::execute() {
 	switch (wifiState.value()) {
 		case WIFI_COMMISSIONING_STATE::SCAN:
 			wifiState.writeValue(WIFI_COMMISSIONING_STATE::SCANNING);
-			wifiState.writeValue(scanNetworks() ? WIFI_COMMISSIONING_STATE::SCANNED : WIFI_COMMISSIONING_STATE::ERROR);
+			wifiState.writeValue(WiFiService::scanNetworks() ? WIFI_COMMISSIONING_STATE::SCANNED : WIFI_COMMISSIONING_STATE::ERROR);
 			break;
-
 		case WIFI_COMMISSIONING_STATE::SAVE:
 			wifiState.writeValue(WIFI_COMMISSIONING_STATE::SAVING);
-			wifiState.writeValue(saveNetwork() ? WIFI_COMMISSIONING_STATE::SAVED : WIFI_COMMISSIONING_STATE::ERROR);
+			wifiState.writeValue(WiFiService::saveNetwork() ? WIFI_COMMISSIONING_STATE::SAVED : WIFI_COMMISSIONING_STATE::ERROR);
 			break;
-
 		case WIFI_COMMISSIONING_STATE::JOIN:
 			wifiState.writeValue(WIFI_COMMISSIONING_STATE::JOINING);
-			wifiState.writeValue(joinNetwork() ? WIFI_COMMISSIONING_STATE::JOINED : WIFI_COMMISSIONING_STATE::ERROR);
+			wifiState.writeValue(WiFiService::joinNetwork() ? WIFI_COMMISSIONING_STATE::JOINED : WIFI_COMMISSIONING_STATE::ERROR);
 			break;
-
 		case WIFI_COMMISSIONING_STATE::ERROR:
 			digitalWrite(RED_LED, HIGH);
 			break;
-
-		// idle
-		default:
+		default: // idle
 			break;
 	}
 

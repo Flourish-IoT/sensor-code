@@ -1,7 +1,8 @@
 #pragma once
-#include "base_service.h"
 
-struct DeviceInfo
+#include "./base_service.h"
+
+struct DeviceInformation
 {
 	unsigned int deviceId;
 	String       deviceToken;
@@ -11,20 +12,19 @@ struct DeviceInfo
 class CommissioningService : public BaseService 
 {
 public:
-	void registerService() override;
-	void registerAttributes() override;
-
-	int  initialize() override;
-	bool isInitialized() override;
-
-	int  execute() override;
-
-	CommissioningService(int deviceType);
+	CommissioningService(int const deviceType);
+	
+	void registerService()    const override;
+	void registerAttributes() const override;
+	int  initialize()               override;
+	bool isInitialized()      const override;
+	int  execute()                  override;
 
 private:
-	int        deviceType;
-	DeviceInfo deviceInfo;
-	int        saveDeviceInformation();
+	int               _deviceType;
+	DeviceInformation _deviceInfo;
+
+	int saveDeviceInformation() const;
 };
 
 namespace COMMISSIONING_STATE 

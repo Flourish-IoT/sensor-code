@@ -1,12 +1,24 @@
-#include <Arduino.h>
-#include <WiFiNINA.h>
-#include <ArduinoBLE.h>
+#include "Arduino.h"
+#include "ArduinoBLE.h"
+#include "ArduinoHttpClient.h"
+#include "WiFiNINA.h"
 
 #include "../common.h"
-#include "wifi.h"
-#include "ble.h"
+#include "./wifi.h"
+#include "./ble.h"
 
-void startWifi() {
+IPAddress ip;
+WiFiClient wifi;
+
+char    * const SERVER_NAME  = "httpbin.org";
+uint8_t   const WIFI_PORT    = 80;
+char    * const CONTENT_TYPE = "application/json";
+char    * const POST_URI     = "/post";
+
+HttpClient * const client = new HttpClient(wifi, SERVER_NAME, WIFI_PORT);
+
+void WifiOperations::startWifi() 
+{
 	// stop ble
 	Serial.println("Stopping BLE");
 	BLE.stopAdvertise();
@@ -20,6 +32,18 @@ void startWifi() {
 	wiFiDrv.wifiDriverInit();
 	// gives driver time to startup
 	// TODO: is there a better way to do this
-	delay(100);
+	delay(DELAY_RATE);
 	Serial.println("WiFi initialized");
+}
+
+WifiOperations::PostResponse * WifiOperations::postData(char * const data)
+{
+	WifiOperations::PostResponse * const response = (WifiOperations::PostResponse *) malloc(sizeof(WifiOperations::PostResponse));
+	
+	client->post(POST_URI, CONTENT_TYPE, data);
+
+	response->status = client->responseStatusCode();
+	response->body   = (char *) client->responseBody().c_str();
+
+	return response;
 }
