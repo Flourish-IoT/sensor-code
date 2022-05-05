@@ -43,3 +43,27 @@ SensorResults::LuxResults * SensorOperations::readLuxSensor()
 
 	return luxResults;
 }
+
+void SensorOperations::setupSensors()
+{
+	Serial.println("Setting up sensors");
+
+	if (!seesawSensor->begin(SEESAW_I2C_ADDRESS)) {
+		Serial.println("CANNOT START SEESAW");
+		for (;;) 
+			delay(5000);
+	}
+	Serial.println("SEESAW STARTED");
+	
+	if (!luxSensor->begin()) {
+		Serial.println("CANNOT START VEML");
+	}
+	Serial.println("VEML STARTED");
+	Serial.println("Setting Lux Sensor Gain");
+	luxSensor->setGain(VEML7700_GAIN_1_8);
+	Serial.println("Setting Lux Sensor Integration Time");
+	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
+	
+	Serial.print("Beginning DHT11");
+	humidityTemperatureSensor->begin();
+}
