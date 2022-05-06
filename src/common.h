@@ -4,19 +4,19 @@
 
 static uint16_t const BLE_MAX_CHARACTERISTIC_SIZE = 512;
 
-uint8_t    const RED_LED           			= 2;
-uint8_t    const GREEN_LED         			= 3;
-uint8_t    const BLUE_LED          			= 4;
-uint8_t    const DIGITAL_PIN_7     			= 7;
-uint16_t   const DELAY_RATE        			= 1000;
-uint16_t   const SERIAL_RATE       			= 9600;
-uint8_t    const SEESAW_I2C_ADDRESS			= 0x36;
-uint8_t    const SEESAW_CAPACATIVE_PIN	= 0;
-char     * const MODEL             			= "Flourish Device";
-char     * const SERIAL_NUMBER     		  = "abcde";
-char     * const HARDWARE_REVISION 			= "0.1";
-char     * const FIRMWARE_REVISION 			= "0.1";
-char       const DEGREE_SYMBOL     			= 248;
+uint8_t     const RED_LED           			= 2;
+uint8_t     const GREEN_LED         			= 3;
+uint8_t     const BLUE_LED          			= 4;
+uint8_t     const DIGITAL_PIN_7     			= 7;
+uint16_t    const DELAY_RATE        			= 1000;
+uint16_t    const SERIAL_RATE       			= 9600;
+uint8_t     const SEESAW_I2C_ADDRESS			= 0x36;
+uint8_t     const SEESAW_CAPACATIVE_PIN	  = 0;
+const char* const MODEL             		  = "Flourish Device";
+const char* const SERIAL_NUMBER     		  = "abcde";
+const char* const HARDWARE_REVISION 		  = "0.1";
+const char* const FIRMWARE_REVISION 		  = "0.1";
+char        const DEGREE_SYMBOL     			= 248;
 
 enum class FLOURISH_EXCEPTION {
   NO_WIFI_SSID

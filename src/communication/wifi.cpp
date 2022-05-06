@@ -10,14 +10,14 @@
 IPAddress ip;
 WiFiClient wifi;
 
-char    * const SERVER_NAME  = "httpbin.org";
-uint8_t   const WIFI_PORT    = 80;
-char    * const CONTENT_TYPE = "application/json";
-char    * const POST_URI     = "/post";
+const char* const SERVER_NAME  = "httpbin.org";
+uint8_t   	const WIFI_PORT    = 80;
+const char* const CONTENT_TYPE = "application/json";
+const char* const POST_URI     = "/post";
 
 HttpClient * const client = new HttpClient(wifi, SERVER_NAME, WIFI_PORT);
 
-void WifiOperations::startWifi() 
+void WifiOperations::startWifi()
 {
 	// stop ble
 	Serial.println("Stopping BLE");
@@ -39,7 +39,7 @@ void WifiOperations::startWifi()
 WifiOperations::PostResponse * WifiOperations::postData(char * const data)
 {
 	WifiOperations::PostResponse * const response = (WifiOperations::PostResponse *) malloc(sizeof(WifiOperations::PostResponse));
-	
+
 	client->post(POST_URI, CONTENT_TYPE, data);
 
 	response->status = client->responseStatusCode();

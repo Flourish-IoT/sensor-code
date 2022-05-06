@@ -1,5 +1,3 @@
-#pragma once
-
 #include "./sensor_results.h"
 #include "./sensor_operations.h"
 #include "../common.h"
