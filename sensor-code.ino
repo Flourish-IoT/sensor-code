@@ -9,33 +9,17 @@
 #include "./src/sensors/sensor_results.h"
 #include "./src/sensors/sensor_operations.h"
 
+#include "src/services/commissioning_service.h"
+#include "src/services/commissioning_service.h"
+#include "src/services/wifi_service.h"
+#include "src/services/battery_service.h"
+#include "src/services/device_information_service.h"
+
 #ifndef COMMISSION
 #define COMMISSION true
 #endif
 
-BLEDevice central;
-
-uint8_t deviceState = DEVICE_STATE::IDLE;
-
-inline void setupCommissioning()
-{
-	Serial.println("Setting up commissioning");
-
-	BluetoothOperations::setupServices();
-	deviceState = DEVICE_STATE::COMMISSIONING;
-	BluetoothOperations::startBle();
-
-	Serial.println("Commissioning setup complete");
-}
-
-inline void setupDevice()
-{
-	Serial.println("All services initialized, setting up device");
-	SensorOperations::setupSensors();
-	deviceState = DEVICE_STATE::COMMISSIONED;
-	digitalWrite(BLUE_LED, LOW);
-	digitalWrite(GREEN_LED, HIGH);
-}
+BluetoothCommissioner commissioner = BluetoothCommissioner({new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), new WiFiService(), new BatteryService(), new DeviceInformationService()});
 
 void readSensors()
 {
@@ -84,10 +68,10 @@ void setup()
 	pinMode(GREEN_LED, OUTPUT);
 	pinMode(BLUE_LED, OUTPUT);
 
-	BluetoothOperations::initializeServices();
+	commissioner.initialize();
 
 #if COMMISSION
-	if (BluetoothOperations::servicesInitialized())
+	if (commissioner.isInitialized())
 #endif
 	{
 		setupDevice();
@@ -95,7 +79,7 @@ void setup()
 #if COMMISSION
 	else
 	{
-		setupCommissioning();
+		commissioner.startCommissioning();
 	}
 #endif
 
@@ -107,19 +91,20 @@ void loop()
 {
 	switch (deviceState)
 	{
-		case DEVICE_STATE::COMMISSIONING:
-			central = BLE.central();
+		case DEVICE_STATE::COMMISSIONING: {
+			BLEDevice central = BLE.central();
 
 			digitalWrite(BLUE_LED, HIGH);
 
 			if (central)
 				while (central.connected())
-					BluetoothOperations::executeServices();
+					commissioner.execute();
 
 			delay(DELAY_RATE);
 			digitalWrite(BLUE_LED, LOW);
 			delay(DELAY_RATE);
 			break;
+		}
 		case DEVICE_STATE::COMMISSIONED:
 			Serial.println("Commisioned loop");
 			readSensors();

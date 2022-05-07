@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Arduino.h"
+#include "bluetooth_commissioner.h"
 
 static uint16_t const BLE_MAX_CHARACTERISTIC_SIZE = 512;
 
@@ -18,6 +19,9 @@ const char* const HARDWARE_REVISION 		  = "0.1";
 const char* const FIRMWARE_REVISION 		  = "0.1";
 char        const DEGREE_SYMBOL     			= 248;
 
+extern BluetoothCommissioner commissioner;
+extern uint8_t deviceState;
+
 enum class FLOURISH_EXCEPTION {
   NO_WIFI_SSID
 };
@@ -31,3 +35,5 @@ namespace DEVICE_STATE
     ERROR         = 8
   };
 }
+
+void setupDevice();

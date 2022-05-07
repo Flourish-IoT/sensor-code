@@ -32,7 +32,7 @@ void WifiOperations::startWifi()
 	wiFiDrv.wifiDriverInit();
 	// gives driver time to startup
 	// TODO: is there a better way to do this
-	delay(DELAY_RATE);
+	delay(100);
 	Serial.println("WiFi initialized");
 }
 
