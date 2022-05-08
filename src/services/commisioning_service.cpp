@@ -71,6 +71,7 @@ int CommissioningService::initialize()
 {
 	Serial.println("Initializing Commissioning Service");
 	Serial.println("Loading Device Information");
+	// TODO: look into WifiNina WifiStorage
 	_deviceInfo = deviceStorage.read();
 
 	if (isInitialized()) {

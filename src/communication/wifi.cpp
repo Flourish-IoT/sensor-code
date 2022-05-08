@@ -9,9 +9,10 @@
 
 namespace WifiOperations
 {
-  const char* const SERVER_NAME  = "httpbin.org";
-  const char* const PATH     	   = "/anything/devices/";
-  uint8_t   	const SERVER_PORT  = 80;
+  const char* const SERVER_NAME  = "3.83.190.154";
+  const char* const API_VERSION  = "v1";
+  const char* const PATH     	   = "/devices/";
+  uint16_t   	const SERVER_PORT  = 5000;
   const char* const CONTENT_TYPE = "application/json";
 
   WiFiClient wifi;
@@ -42,8 +43,8 @@ namespace WifiOperations
   {
     PostResponse* const response = new PostResponse();
 
-    Serial.println("Posting data to " + String( PATH ) + String(deviceInformation.deviceId) + "/data");
-    client->post(String( PATH ) + String(deviceInformation.deviceId) + "/data", CONTENT_TYPE, data);
+    Serial.println("Posting data to " + String(API_VERSION) + String( PATH ) + String(deviceInformation.deviceId) + "/data");
+    client->post(String(API_VERSION) + String( PATH ) + String(deviceInformation.deviceId) + "/data", CONTENT_TYPE, data);
 
     response->status = client->responseStatusCode();
     response->body   = (char *) client->responseBody().c_str();

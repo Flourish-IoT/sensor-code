@@ -58,6 +58,7 @@ int BluetoothCommissioner::completeCommissioning() {
 
 	if (isInitialized()) {
 		setupDevice();
+		// TODO: communicate with server to finalize device? need to be able to make the device status connected
 		return 0;
 	}
 
