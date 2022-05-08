@@ -12,7 +12,7 @@ BLEStringCharacteristic        commissioningDeviceToken("00000003-1254-4046-81d7
 BLEStringCharacteristic        commissioningDeviceName("00000004-1254-4046-81d7-676ba8909661", BLERead | BLEWrite | BLEIndicate, BLE_MAX_CHARACTERISTIC_SIZE);
 BLEByteCharacteristic          commissioningDeviceType("00000005-1254-4046-81d7-676ba8909661", BLERead | BLEIndicate);
 
-CommissioningService::CommissioningService(int const deviceType) 
+CommissioningService::CommissioningService(int const deviceType)
 {
 	this->_deviceType = deviceType;
 }
@@ -92,19 +92,27 @@ bool CommissioningService::isInitialized() const
 
 int CommissioningService::execute()
 {
-	if (commissioningState.written()) {
-		return 1;
+	if (!commissioningState.written()) {
+		return 0;
 	}
 
 	switch (commissioningState.value()) {
 		case COMMISSIONING_STATE::SAVE:
 			commissioningState.writeValue(COMMISSIONING_STATE::SAVING);
-			commissioningState.writeValue(saveDeviceInformation() ? COMMISSIONING_STATE::SAVED : COMMISSIONING_STATE::ERROR);
+			if (saveDeviceInformation() != 0) {
+				commissioningState.writeValue(COMMISSIONING_STATE::ERROR);
+				return -1;
+			}
+			commissioningState.writeValue(COMMISSIONING_STATE::SAVED);
 			break;
 
 		case COMMISSIONING_STATE::COMPLETE:
-			// TODO: start wifi and stuff
-			// device_state = DEVICE_STATE::COMMISSIONED;
+			commissioner.completeCommissioning();
+			// probably should handle error case
+			// if (!commissioner.completeCommissioning()) {
+				// commissioningState.writeValue(COMMISSIONING_STATE::ERROR);
+				// return 1;
+			// }
 			break;
 
 		case COMMISSIONING_STATE::ERROR:

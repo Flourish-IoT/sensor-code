@@ -43,7 +43,7 @@ void BluetoothCommissioner::registerServices() {
 void BluetoothCommissioner::startCommissioning() {
 	Serial.println("Setting up commissioning");
 
-	this->setupServices();
+	setupServices();
 	deviceState = DEVICE_STATE::COMMISSIONING;
 	// start BLE will register the services
 	BluetoothOperations::startBle();
@@ -54,9 +54,9 @@ void BluetoothCommissioner::startCommissioning() {
 int BluetoothCommissioner::completeCommissioning() {
 	Serial.println("Commissioning complete");
 
-	this->initialize();
+	initialize();
 
-	if (this->isInitialized()) {
+	if (isInitialized()) {
 		setupDevice();
 		return 0;
 	}

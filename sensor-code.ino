@@ -23,6 +23,8 @@ BluetoothCommissioner commissioner = BluetoothCommissioner({new CommissioningSer
 
 void readSensors()
 {
+	digitalWrite(BLUE_LED, HIGH);
+
 	StaticJsonDocument<200> document;
 	char * data;
 
@@ -40,7 +42,6 @@ void readSensors()
 	Serial.println("Capacitance: " + String(capacitance) + "/1024");
 	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
 
-	digitalWrite(BLUE_LED, HIGH);
 
 	document["water"]       = capacitance;
 	document["light"]       = luminescense;
@@ -56,6 +57,8 @@ void readSensors()
 	Serial.print(response->status);
 	Serial.print(";\tResponse: ");
 	Serial.println(response->body);
+
+	digitalWrite(BLUE_LED, LOW);
 }
 
 void setup()
@@ -86,6 +89,9 @@ void setup()
 	Serial.println("Setup complete");
 }
 
+void onError() {
+	digitalWrite(RED_LED, HIGH);
+}
 
 void loop()
 {
@@ -96,13 +102,17 @@ void loop()
 
 			digitalWrite(BLUE_LED, HIGH);
 
-			if (central)
-				while (central.connected())
-					commissioner.execute();
+			if (central) {
+				while (central.connected()) {
+					if (commissioner.execute() != 0) {
+						onError();
+					}
+				}
+			}
 
-			delay(DELAY_RATE);
+			delay(500);
 			digitalWrite(BLUE_LED, LOW);
-			delay(DELAY_RATE);
+			delay(500);
 			break;
 		}
 		case DEVICE_STATE::COMMISSIONED:
