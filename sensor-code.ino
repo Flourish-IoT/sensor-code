@@ -25,8 +25,9 @@ void readSensors()
 {
 	digitalWrite(BLUE_LED, HIGH);
 
-	StaticJsonDocument<200> document;
-	char * data;
+	Serial.println("Reading sensors");
+	StaticJsonDocument<JSON_SIZE> document;
+	char data[JSON_SIZE];
 
 	SensorResults::DHT11Results  * const dht11Results  = SensorOperations::readDHT11Sensor();
 	SensorResults::SeesawResults * const seesawResults = SensorOperations::readSeesawSensor();
@@ -42,16 +43,15 @@ void readSensors()
 	Serial.println("Capacitance: " + String(capacitance) + "/1024");
 	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
 
-
 	document["water"]       = capacitance;
 	document["light"]       = luminescense;
 	document["humidity"]    = humidity;
 	document["temperature"] = temperature;
-	document["time"]        = (float) std::time(nullptr);
+	document["time"]        = WiFi.getTime();
 
-	size_t size = sizeof(data) / sizeof(char);
+	serializeJson(document, data, JSON_SIZE);
 
-	serializeJson(document, data, size);
+	Serial.println("Sending data to server");
 	WifiOperations::PostResponse * const response = WifiOperations::postData(data);
 	Serial.print("Status: ");
 	Serial.print(response->status);
@@ -116,7 +116,6 @@ void loop()
 			break;
 		}
 		case DEVICE_STATE::COMMISSIONED:
-			Serial.println("Commisioned loop");
 			readSensors();
 			delay(DELAY_RATE);
 			break;
