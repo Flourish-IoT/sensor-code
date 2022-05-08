@@ -44,7 +44,7 @@ void readSensors()
 	Serial.println("Humidity: " + String(humidity) + "%");
 	Serial.println("Capacitance: " + String(capacitance) + "/1024");
 	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
-	Serial.println("Timestamp: " + timestamp);
+	Serial.println("Timestamp: " + String(timestamp));
 
 	document["soilMoisture"]       = capacitance;
 	document["light"]       			 = luminescense;
@@ -101,7 +101,7 @@ void onError() {
 }
 
 void clearError() {
-	digitalWrite(RED_LED, HIGH);
+	digitalWrite(RED_LED, LOW);
 }
 
 void loop()
