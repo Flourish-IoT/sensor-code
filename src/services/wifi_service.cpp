@@ -86,8 +86,9 @@ int WiFiService::joinNetwork(String ssid, String password) const
 	WiFi.setTimeout(10 * 1000);
 	int wifiStatus = WiFi.begin(ssid.c_str(), password.c_str());
 
-	int reasonCode = WiFi.reasonCode();
 	if (wifiStatus != WL_CONNECTED) {
+		int reasonCode = WiFi.reasonCode();
+		Serial.println("Failed to connect");
 		Serial.println("Status: " + String(wifiStatus));
 		Serial.println("reason: " + String(reasonCode)); // https://community.cisco.com/t5/wireless-mobility-documents/802-11-association-status-802-11-deauth-reason-codes/ta-p/3148055
 
@@ -110,6 +111,7 @@ int WiFiService::joinNetwork(String ssid, String password) const
 		return -1;
 	}
 
+	Serial.println("Succesfully joined network");
 	return 0;
 }
 
@@ -118,10 +120,10 @@ int WiFiService::saveNetwork()
 {
 	Serial.println("Saving network " + wifiSsid.value());
 
-	wifiSsid.value().toCharArray(network.ssid, 32);
-	wifiPassword.value().toCharArray(network.password, 64);
+	wifiSsid.value().toCharArray(_network.ssid, 32);
+	wifiPassword.value().toCharArray(_network.password, 64);
 
-	networkStorage.write(network);
+	networkStorage.write(_network);
 	Serial.println("WiFi Information Saved");
 	return 0;
 }
@@ -130,13 +132,13 @@ int WiFiService::initialize()
 {
 	Serial.println("Initializing WiFi service");
 	Serial.println("Loading Network");
-	network = networkStorage.read();
+	_network = networkStorage.read();
 
 	if (isInitialized()) {
 		Serial.println("Loaded Network");
-		Serial.println("SSID: " + String(network.ssid));
+		Serial.println("SSID: " + String(_network.ssid));
 		WifiOperations::startWifi();
-		joinNetwork(network.ssid, network.password);
+		joinNetwork(_network.ssid, _network.password);
 	}
 
 	return 0;
@@ -144,7 +146,7 @@ int WiFiService::initialize()
 
 bool WiFiService::isInitialized() const
 {
-	return strlen(network.ssid) > 0;
+	return strlen(_network.ssid) > 0;
 }
 
 int WiFiService::execute()

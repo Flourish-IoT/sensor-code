@@ -44,7 +44,7 @@ public:
 
 
 private:
-	Network network;
+	Network _network;
 
 	int scanNetworks() const;
 	int joinNetwork(String ssid, String password) const;

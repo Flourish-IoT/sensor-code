@@ -71,13 +71,13 @@ int CommissioningService::initialize()
 {
 	Serial.println("Initializing Commissioning Service");
 	Serial.println("Loading Device Information");
-	this->_deviceInfo = deviceStorage.read();
+	_deviceInfo = deviceStorage.read();
 
 	if (isInitialized()) {
 		Serial.println("Loaded Device Information");
-		Serial.println("Name: " + this->_deviceInfo.name);
-		Serial.println("ID: " + String(this->_deviceInfo.deviceId));
-		// TODO: setup device
+		Serial.println("Name: " + _deviceInfo.name);
+		Serial.println("ID: " + String(_deviceInfo.deviceId));
+		deviceInformation = _deviceInfo;
 	}
 
 	Serial.println("Commissioning Service Initialized");
