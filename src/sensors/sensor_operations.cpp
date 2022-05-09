@@ -27,15 +27,14 @@ void SensorOperations::readSensors() const
 	uint8_t  const humidity     = dht11Results->humidity;
 	uint16_t const capacitance  = seesawResults->capacitance;
 	float    const luminescense = luxResults->luminescense;
-	
-	// TODO: when device is first turned on this returns 0 until it syncs with NTP server, need to wait for it to initialize
+
 	uint32_t const timestamp    = WiFi.getTime();
 
-	Serial.println("Temperature: " + String(temperature) + DEGREE_SYMBOL + "F");
+	Serial.println("Temperature: " + String(temperature) + DEGREE_SYMBOL + "C");
 	Serial.println("Humidity: " + String(humidity) + "%");
 	Serial.println("Capacitance: " + String(capacitance) + "/1024");
-	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
-	Serial.println("Timestamp: " + String(timestamp));
+	Serial.println("Luminescence: " + String(luminescense) + " lux");
+	Serial.println("Timestamp: " + String(timestamp) + "\n");
 
 	document["soilMoisture"] = capacitance;
 	document["light"]        = luminescense;
@@ -90,7 +89,7 @@ SensorResults::DHT11Results * SensorOperations::readDHT11Sensor() const
 	SensorResults::DHT11Results * const dht11Results = (SensorResults::DHT11Results *) malloc(sizeof(SensorResults::DHT11Results));  // Allocate address for results struct
 
 	dht11Results->humidity    = this->_humidityTemperatureSensor->readHumidity();
-	dht11Results->temperature = this->_humidityTemperatureSensor->readTemperature(true);                                             // true: F, false: C
+	dht11Results->temperature = this->_humidityTemperatureSensor->readTemperature(false);                                             // true: F, false: C
 
 	return dht11Results;
 }

@@ -110,8 +110,9 @@ int WiFiService::joinNetwork(String ssid, String password) const
 		// TODO: handle error
 		return -1;
 	}
-
 	Serial.println("Succesfully joined network");
+
+
 	return 0;
 }
 
@@ -139,6 +140,16 @@ int WiFiService::initialize()
 		Serial.println("SSID: " + String(_network.ssid));
 		WifiOperations::startWifi();
 		joinNetwork(_network.ssid, _network.password);
+
+		Serial.println("Initializing WiFi time");
+		// WiFi timestamp is initially 0, need to wait for module to update with latest time
+		int timestamp = 0;
+		do
+		{
+			timestamp = WiFi.getTime();
+			Serial.println("Current time: " + String(timestamp));
+			delay(500);
+		} while (timestamp == 0);
 	}
 
 	return 0;
