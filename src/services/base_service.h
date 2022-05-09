@@ -1,28 +1,28 @@
 #pragma once
 
-class BaseService 
+class BaseService
 {
 public:
 	virtual void registerService()    const = 0;
 	virtual void registerAttributes() const = 0;
 
-	virtual int  execute() 
+	virtual int  execute()
+	{
+		return 0;
+	};
+	virtual int  initialize()
+	{
+		return 0;
+	};
+	virtual bool isInitialized()     const
+	{
+		return true;
+	};
+	virtual void onBLEConnected()    const
 	{
 		// empty
 	};
-	virtual int  initialize()              
-	{
-		// empty
-	};
-	virtual bool isInitialized()     const 
-	{ 
-		return true; 
-	};
-	virtual void onBLEConnected()    const 
-	{
-		// empty
-	};
-	virtual void onBLEDisconnected() const 
+	virtual void onBLEDisconnected() const
 	{
 		// empty
 	};

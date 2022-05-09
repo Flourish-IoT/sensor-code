@@ -4,7 +4,7 @@
 
 #include "./base_service.h"
 
-namespace WIFI_COMMISSIONING_STATE 
+namespace WIFI_COMMISSIONING_STATE
 {
 	enum {
 		IDLE     = 1,
@@ -27,15 +27,15 @@ namespace WIFI_COMMISSIONING_STATE
 
 struct Network
 {
-	String ssid;
-	String password;
+	char ssid[32];
+	char password[64];
 };
 
-class WiFiService : public BaseService 
+class WiFiService : public BaseService
 {
 public:
 	WiFiService() = default;
-	
+
 	void  registerService()    const override;
 	void  registerAttributes() const override;
 	int   execute()                  override;
@@ -45,8 +45,8 @@ public:
 
 private:
 	Network _network;
-	
+
 	int scanNetworks() const;
-	int joinNetwork()  const;
+	int joinNetwork(String ssid, String password) const;
 	int saveNetwork();
 };

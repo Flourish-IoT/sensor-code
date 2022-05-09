@@ -9,38 +9,25 @@
 #include "./src/sensors/sensor_results.h"
 #include "./src/sensors/sensor_operations.h"
 
+#include "src/services/commissioning_service.h"
+#include "src/services/commissioning_service.h"
+#include "src/services/wifi_service.h"
+#include "src/services/battery_service.h"
+#include "src/services/device_information_service.h"
+
 #ifndef COMMISSION
 #define COMMISSION true
 #endif
 
-BLEDevice central;
-
-uint8_t deviceState = DEVICE_STATE::IDLE;
-
-inline void setupCommissioning()
-{
-	Serial.println("Setting up commissioning");
-
-	BluetoothOperations::setupServices();
-	deviceState = DEVICE_STATE::COMMISSIONING;
-	BluetoothOperations::startBle();
-
-	Serial.println("Commissioning setup complete");
-}
-
-inline void setupDevice()
-{
-	Serial.println("All services initialized, setting up device");
-	SensorOperations::setupSensors();
-	deviceState = DEVICE_STATE::COMMISSIONED;
-	digitalWrite(BLUE_LED, LOW);
-	digitalWrite(GREEN_LED, HIGH);
-}
+BluetoothCommissioner commissioner = BluetoothCommissioner({new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), new WiFiService(), new BatteryService(), new DeviceInformationService()});
 
 void readSensors()
 {
-	StaticJsonDocument<200> document;
-	char * data;
+	digitalWrite(BLUE_LED, HIGH);
+
+	Serial.println("Reading sensors");
+	StaticJsonDocument<JSON_SIZE> document;
+	char data[JSON_SIZE];
 
 	SensorResults::DHT11Results  * const dht11Results  = SensorOperations::readDHT11Sensor();
 	SensorResults::SeesawResults * const seesawResults = SensorOperations::readSeesawSensor();
@@ -50,28 +37,35 @@ void readSensors()
 	uint8_t  const humidity     = dht11Results->humidity;
 	uint16_t const capacitance  = seesawResults->capacitance;
 	float    const luminescense = luxResults->luminescense;
+	// TODO: when device is first turned on this returns 0 until it syncs with NTP server, need to wait for it to initialize
+	ulong    const timestamp = WiFi.getTime();
 
 	Serial.println("Temperature: " + String(temperature) + DEGREE_SYMBOL + "F");
 	Serial.println("Humidity: " + String(humidity) + "%");
 	Serial.println("Capacitance: " + String(capacitance) + "/1024");
 	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
+	Serial.println("Timestamp: " + String(timestamp));
 
-	digitalWrite(BLUE_LED, HIGH);
+	document["soilMoisture"]       = capacitance;
+	document["light"]       			 = luminescense;
+	document["humidity"]    			 = humidity;
+	document["temperature"] 			 = temperature;
+	document["timestamp"]        	 = timestamp;
 
-	document["water"]       = capacitance;
-	document["light"]       = luminescense;
-	document["humidity"]    = humidity;
-	document["temperature"] = temperature;
-	document["time"]        = (float) std::time(nullptr);
-
-	size_t size = sizeof(data) / sizeof(char);
-
-	serializeJson(document, data, size);
+	Serial.println("Sending data to server");
+	serializeJson(document, data, JSON_SIZE);
 	WifiOperations::PostResponse * const response = WifiOperations::postData(data);
 	Serial.print("Status: ");
 	Serial.print(response->status);
+	if (response->status == 200) {
+		clearError();
+	} else {
+		onError();
+	}
 	Serial.print(";\tResponse: ");
 	Serial.println(response->body);
+
+	digitalWrite(BLUE_LED, LOW);
 }
 
 void setup()
@@ -84,10 +78,10 @@ void setup()
 	pinMode(GREEN_LED, OUTPUT);
 	pinMode(BLUE_LED, OUTPUT);
 
-	BluetoothOperations::initializeServices();
+	commissioner.initialize();
 
 #if COMMISSION
-	if (BluetoothOperations::servicesInitialized())
+	if (commissioner.isInitialized())
 #endif
 	{
 		setupDevice();
@@ -95,33 +89,44 @@ void setup()
 #if COMMISSION
 	else
 	{
-		setupCommissioning();
+		commissioner.startCommissioning();
 	}
 #endif
 
 	Serial.println("Setup complete");
 }
 
+void onError() {
+	digitalWrite(RED_LED, HIGH);
+}
+
+void clearError() {
+	digitalWrite(RED_LED, LOW);
+}
 
 void loop()
 {
 	switch (deviceState)
 	{
-		case DEVICE_STATE::COMMISSIONING:
-			central = BLE.central();
+		case DEVICE_STATE::COMMISSIONING: {
+			BLEDevice central = BLE.central();
 
 			digitalWrite(BLUE_LED, HIGH);
 
-			if (central)
-				while (central.connected())
-					BluetoothOperations::executeServices();
+			if (central) {
+				while (central.connected()) {
+					if (commissioner.execute() != 0) {
+						onError();
+					}
+				}
+			}
 
-			delay(DELAY_RATE);
+			delay(500);
 			digitalWrite(BLUE_LED, LOW);
-			delay(DELAY_RATE);
+			delay(500);
 			break;
+		}
 		case DEVICE_STATE::COMMISSIONED:
-			Serial.println("Commisioned loop");
 			readSensors();
 			delay(DELAY_RATE);
 			break;

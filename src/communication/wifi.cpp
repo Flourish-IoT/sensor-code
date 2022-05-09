@@ -4,46 +4,52 @@
 #include "WiFiNINA.h"
 
 #include "../common.h"
-#include "./wifi.h"
-#include "./ble.h"
+#include "wifi.h"
+#include "ble.h"
 
-IPAddress ip;
-WiFiClient wifi;
-
-const char* const SERVER_NAME  = "httpbin.org";
-uint8_t   	const WIFI_PORT    = 80;
-const char* const CONTENT_TYPE = "application/json";
-const char* const POST_URI     = "/post";
-
-HttpClient * const client = new HttpClient(wifi, SERVER_NAME, WIFI_PORT);
-
-void WifiOperations::startWifi()
+namespace WifiOperations
 {
-	// stop ble
-	Serial.println("Stopping BLE");
-	BLE.stopAdvertise();
-	BLE.disconnect();
-	BLE.end();
+  const char* const SERVER_NAME  = "3.83.190.154";
+  const char* const API_VERSION  = "v1";
+  const char* const PATH     	   = "/devices/";
+  uint16_t   	const SERVER_PORT  = 5000;
+  const char* const CONTENT_TYPE = "application/json";
 
-	Serial.println("Initializing WiFi");
+  WiFiClient wifi;
+  HttpClient * client = new HttpClient(wifi, SERVER_NAME, SERVER_PORT);
 
-	// start WiFi
-	wiFiDrv.wifiDriverDeinit();
-	wiFiDrv.wifiDriverInit();
-	// gives driver time to startup
-	// TODO: is there a better way to do this
-	delay(DELAY_RATE);
-	Serial.println("WiFi initialized");
+  void startWifi()
+  {
+    // stop ble
+    Serial.println("Stopping BLE");
+    if (BLE.connected()) {
+      BLE.stopAdvertise();
+      BLE.disconnect();
+    }
+    BLE.end();
+
+    Serial.println("Initializing WiFi");
+
+    // start WiFi
+    wiFiDrv.wifiDriverDeinit();
+    wiFiDrv.wifiDriverInit();
+    // gives driver time to startup
+    // TODO: is there a better way to do this
+    delay(100);
+    Serial.println("WiFi initialized");
+  }
+
+  PostResponse * postData(char * const data)
+  {
+    PostResponse* const response = new PostResponse();
+
+    Serial.println("Posting data to " + String(API_VERSION) + String( PATH ) + String(deviceInformation.deviceId) + "/data");
+    client->post(String(API_VERSION) + String( PATH ) + String(deviceInformation.deviceId) + "/data", CONTENT_TYPE, data);
+
+    response->status = client->responseStatusCode();
+    response->body   = (char *) client->responseBody().c_str();
+
+    return response;
+  }
 }
 
-WifiOperations::PostResponse * WifiOperations::postData(char * const data)
-{
-	WifiOperations::PostResponse * const response = (WifiOperations::PostResponse *) malloc(sizeof(WifiOperations::PostResponse));
-
-	client->post(POST_URI, CONTENT_TYPE, data);
-
-	response->status = client->responseStatusCode();
-	response->body   = (char *) client->responseBody().c_str();
-
-	return response;
-}

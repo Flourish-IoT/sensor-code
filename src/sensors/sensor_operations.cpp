@@ -64,6 +64,6 @@ void SensorOperations::setupSensors()
 	Serial.println("Setting Lux Sensor Integration Time");
 	luxSensor->setIntegrationTime(VEML7700_IT_25MS);
 
-	Serial.print("Beginning DHT11");
+	Serial.println("Beginning DHT11");
 	humidityTemperatureSensor->begin();
 }
