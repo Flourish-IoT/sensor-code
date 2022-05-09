@@ -142,13 +142,15 @@ int WiFiService::initialize()
 		joinNetwork(_network.ssid, _network.password);
 
 		Serial.println("Initializing WiFi time");
+		Serial.println("WiFi firmware version: " + String(WiFi.firmwareVersion()));
+		Serial.println("Latest version: " + String(WIFI_FIRMWARE_LATEST_VERSION));
 		// WiFi timestamp is initially 0, need to wait for module to update with latest time
 		int timestamp = 0;
 		do
 		{
 			timestamp = WiFi.getTime();
 			Serial.println("Current time: " + String(timestamp));
-			delay(500);
+			delay(1000);
 		} while (timestamp == 0);
 	}
 

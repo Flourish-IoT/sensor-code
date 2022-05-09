@@ -37,6 +37,7 @@ namespace WifiOperations
 		// gives driver time to startup
 		// TODO: is there a better way to do this
 		delay(DELAY_RATE);
+		client->setTimeout(10);
 		Serial.println("WiFi initialized");
 	}
 
