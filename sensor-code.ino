@@ -19,7 +19,13 @@
 #define COMMISSION true
 #endif
 
-BluetoothCommissioner commissioner = BluetoothCommissioner({new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), new WiFiService(), new BatteryService(), new DeviceInformationService()});
+BluetoothCommissioner * commissioner = new BluetoothCommissioner(
+	{
+		new CommissioningService(COMMISSIONING_DEVICE_TYPE::SENSOR), 
+		new WiFiService(), 
+		new BatteryService(), 
+		new DeviceInformationService()
+	});
 
 void readSensors()
 {
@@ -37,8 +43,9 @@ void readSensors()
 	uint8_t  const humidity     = dht11Results->humidity;
 	uint16_t const capacitance  = seesawResults->capacitance;
 	float    const luminescense = luxResults->luminescense;
+	
 	// TODO: when device is first turned on this returns 0 until it syncs with NTP server, need to wait for it to initialize
-	ulong    const timestamp = WiFi.getTime();
+	uint32_t const timestamp    = WiFi.getTime();
 
 	Serial.println("Temperature: " + String(temperature) + DEGREE_SYMBOL + "F");
 	Serial.println("Humidity: " + String(humidity) + "%");
@@ -46,27 +53,38 @@ void readSensors()
 	Serial.println("Luminescence: " + String(luminescense) + " lux\n");
 	Serial.println("Timestamp: " + String(timestamp));
 
-	document["soilMoisture"]       = capacitance;
-	document["light"]       			 = luminescense;
-	document["humidity"]    			 = humidity;
-	document["temperature"] 			 = temperature;
-	document["timestamp"]        	 = timestamp;
+	document["soilMoisture"] = capacitance;
+	document["light"]        = luminescense;
+	document["humidity"]     = humidity;
+	document["temperature"]  = temperature;
+	document["timestamp"]    = timestamp;
 
 	Serial.println("Sending data to server");
 	serializeJson(document, data, JSON_SIZE);
 	WifiOperations::PostResponse * const response = WifiOperations::postData(data);
 	Serial.print("Status: ");
 	Serial.print(response->status);
-	if (response->status == 200) {
+	if (response->status == 200)
 		clearError();
-	} else {
+	else
 		onError();
-	}
+
 	Serial.print(";\tResponse: ");
 	Serial.println(response->body);
 
 	digitalWrite(BLUE_LED, LOW);
 }
+
+inline void onError() 
+{
+	digitalWrite(RED_LED, HIGH);
+}
+
+inline void clearError() 
+{
+	digitalWrite(RED_LED, LOW);
+}
+
 
 void setup()
 {
@@ -78,30 +96,18 @@ void setup()
 	pinMode(GREEN_LED, OUTPUT);
 	pinMode(BLUE_LED, OUTPUT);
 
-	commissioner.initialize();
+	commissioner->initialize();
 
 #if COMMISSION
-	if (commissioner.isInitialized())
+	if (commissioner->isInitialized())
 #endif
-	{
 		setupDevice();
-	}
 #if COMMISSION
 	else
-	{
-		commissioner.startCommissioning();
-	}
+		commissioner->startCommissioning();
 #endif
 
 	Serial.println("Setup complete");
-}
-
-void onError() {
-	digitalWrite(RED_LED, HIGH);
-}
-
-void clearError() {
-	digitalWrite(RED_LED, LOW);
 }
 
 void loop()
@@ -113,13 +119,10 @@ void loop()
 
 			digitalWrite(BLUE_LED, HIGH);
 
-			if (central) {
-				while (central.connected()) {
-					if (commissioner.execute() != 0) {
+			if (central)
+				while (central.connected())
+					if (commissioner->execute() != 0)
 						onError();
-					}
-				}
-			}
 
 			delay(500);
 			digitalWrite(BLUE_LED, LOW);

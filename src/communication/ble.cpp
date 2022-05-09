@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "ArduinoBLE.h"
-#include "WiFiNINA.h"
 #include "vector"
+#include "WiFiNINA.h"
 
 #include "./ble.h"
 #include "./wifi.h"
@@ -27,7 +27,7 @@ namespace BluetoothOperations
 		BLE.setDeviceName("Flourish Device");
 		BLE.setAppearance(0x0540); // set appearance to Generic Sensor (from BLE appearance values)
 
-		commissioner.registerServices();
+		commissioner->registerServices();
 
 		BLE.advertise();
 		Serial.println("BLE Initialized");

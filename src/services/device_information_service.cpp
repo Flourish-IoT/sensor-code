@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "ArduinoBLE.h"
 
-#include "../common.h"
 #include "./device_information_service.h"
+#include "../common.h"
 
 BLEService              deviceInformationService("180A");
 BLEStringCharacteristic deviceManufacturerName("2A29", BLERead, 20);

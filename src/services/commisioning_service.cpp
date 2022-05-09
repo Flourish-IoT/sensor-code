@@ -2,8 +2,8 @@
 #include "ArduinoBLE.h"
 #include "FlashStorage.h"
 
-#include "../common.h"
 #include "./commissioning_service.h"
+#include "../common.h"
 
 BLEService                     commissioningService("00000000-1254-4046-81d7-676ba8909661");
 BLEUnsignedShortCharacteristic commissioningState("00000001-1254-4046-81d7-676ba8909661", BLERead | BLEWrite | BLEIndicate);
@@ -108,7 +108,7 @@ int CommissioningService::execute()
 			break;
 
 		case COMMISSIONING_STATE::COMPLETE:
-			commissioner.completeCommissioning();
+			commissioner->completeCommissioning();
 			// probably should handle error case
 			// if (!commissioner.completeCommissioning()) {
 				// commissioningState.writeValue(COMMISSIONING_STATE::ERROR);

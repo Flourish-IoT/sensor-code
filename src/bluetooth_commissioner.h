@@ -1,28 +1,34 @@
 #pragma once
-#include <vector>
+
+#include "vector"
+
 #include "./services/base_service.h"
 
-class BluetoothCommissioner {
-	public:
-		void startCommissioning();
-		int completeCommissioning();
+class BluetoothCommissioner 
+{
+public:
+	void startCommissioning()    const;
+	int  completeCommissioning() const;
 
-		void setupServices();
-		void registerServices();
+	void setupServices()         const;
+	void registerServices()      const;
 
-		int initialize();
-		bool isInitialized();
+	int  initialize()            const;
+	bool isInitialized()         const;
 
-		int execute();
+	int  execute()               const;
 
-		// TODO: unique pointers
-		BluetoothCommissioner(std::vector<BaseService*> services) {
-			this->services = services;
-		};
+	// TODO: unique pointers
+	BluetoothCommissioner(std::vector<BaseService *> const services) 
+	{
+		this->_services = services;
+	};
 
-		std::vector<BaseService*> const getServices() {
-			return services;
-		};
-	private:
-		std::vector<BaseService*> services;
+	std::vector<BaseService *> const getServices() const
+	{
+		return this->_services;
+	};
+
+private:
+	std::vector<BaseService *> _services;
 };

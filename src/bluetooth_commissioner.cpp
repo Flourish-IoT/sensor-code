@@ -1,33 +1,36 @@
-#include <Arduino.h>
-#include <ArduinoBLE.h>
-#include <WiFiNINA.h>
+#include "Arduino.h"
+#include "ArduinoBLE.h"
+#include "WiFiNINA.h"
 
-#include "common.h"
-#include "bluetooth_commissioner.h"
-#include "communication/ble.h"
+#include "./bluetooth_commissioner.h"
+#include "./common.h"
+#include "./communication/ble.h"
 
-void onBLEConnected(BLEDevice central) {
+void onBLEConnected(BLEDevice central) 
+{
 	Serial.print("Connected event, central: ");
 	Serial.println(central.address());
 
-	for (auto service : commissioner.getServices())
+	for (auto service : commissioner->getServices())
 		service->onBLEConnected();
 
 	pinMode(BLUE_LED, HIGH);
 }
 
-void onBLEDisconnected(BLEDevice central) {
-		Serial.print("Disconnected event, central: ");
-		Serial.println(central.address());
-		// TODO: cleanup
+void onBLEDisconnected(BLEDevice central) 
+{
+	Serial.print("Disconnected event, central: ");
+	Serial.println(central.address());
+	// TODO: cleanup
 
-		for (auto service : commissioner.getServices())
-			service->onBLEDisconnected();
+	for (auto service : commissioner->getServices())
+		service->onBLEDisconnected();
 }
 
-void BluetoothCommissioner::setupServices() {
+void BluetoothCommissioner::setupServices() const
+{
 	// setup characteristics
-	for (auto service : services)
+	for (auto service : this->_services)
 		service->registerAttributes();
 
 	// setup event handlers
@@ -35,12 +38,14 @@ void BluetoothCommissioner::setupServices() {
 	BLE.setEventHandler(BLEDisconnected, onBLEDisconnected);
 }
 
-void BluetoothCommissioner::registerServices() {
-	for (auto service : services)
+void BluetoothCommissioner::registerServices() const
+{
+	for (auto service : this->_services)
 		service->registerService();
 }
 
-void BluetoothCommissioner::startCommissioning() {
+void BluetoothCommissioner::startCommissioning() const
+{
 	Serial.println("Setting up commissioning");
 
 	setupServices();
@@ -51,7 +56,8 @@ void BluetoothCommissioner::startCommissioning() {
 	Serial.println("Commissioning setup complete");
 }
 
-int BluetoothCommissioner::completeCommissioning() {
+int BluetoothCommissioner::completeCommissioning() const
+{
 	Serial.println("Commissioning complete");
 
 	initialize();
@@ -65,30 +71,30 @@ int BluetoothCommissioner::completeCommissioning() {
 	return 1;
 }
 
-int BluetoothCommissioner::execute() {
+int BluetoothCommissioner::execute() const
+{
 	int result = 0;
-	for (auto service : services) {
+	for (auto service : this->_services)
 		result |= service->execute();
-	}
 
 	return result == 0 ? 0 : 1;
 }
 
-int BluetoothCommissioner::initialize() {
+int BluetoothCommissioner::initialize() const
+{
 	int result = 0;
-	for (auto service : services) {
+	for (auto service : this->_services)
 		result |= service->initialize();
-	}
 
 	return result == 0 ? 0 : 1;
 }
 
-bool BluetoothCommissioner::isInitialized() {
+bool BluetoothCommissioner::isInitialized() const
+{
 	// makes sure every service is initialized
-	for (auto service : services) {
+	for (auto service : this->_services)
 		if (!service->isInitialized())
 			return false;
-	}
 
 	return true;
 }

@@ -13,5 +13,5 @@ namespace WifiOperations
 	};
 
 	void startWifi();
-	PostResponse * postData(char * const);
+	PostResponse * postData(const char * const);
 }
